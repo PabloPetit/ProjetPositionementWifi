@@ -58,7 +58,7 @@ void setup(void){
 void loop(void){
   delay(3000);
   if(isHost){
-    Serial.println("list des IP connectées");
+    Serial.println("list des IP connectees");
     Serial.println(getJoinedDeviceIP());
   }
 }

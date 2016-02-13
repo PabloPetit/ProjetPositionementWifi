@@ -15,8 +15,16 @@ bool isHost = false;
 bool isConnected = false;
 
 void setup() {
+
     Serial.begin(9600);
     Serial1.begin(115200);
+
+    Serial.println("Liste des define : ");
+    Serial.println(NETWORK_NAME);
+    Serial.println(NETWORK_PSWD);
+    Serial.println(CREATE_NETWORK);
+    Serial.println(JOIN_NETWORK);
+
     if(setupESP()==false){
       //A effacer si plus branché à l'ordi
       communicationWithESP();
@@ -26,12 +34,12 @@ void setup() {
 }
 
 bool endsWithOk(String str){
-  return str.endsWith("OK\r\n");
+  return str.endsWith("OK"ENDL);
 }
 
 bool checkIfESPIsOk(){
   Serial1.println("AT");
-  delay(50);
+  delay(500);
   int response = Serial1.available();
   while(Serial1.available()==true){
     Serial1.readString();
@@ -41,13 +49,13 @@ bool checkIfESPIsOk(){
 
 void restart(){
   Serial.println(RESTART);
-  delay(100);
+  delay(1000);
   clearBuffer(false);
 }
 
 void quitAccessPoint(){
   Serial1.println(QUIT_NETWORK);
-  delay(100);
+  delay(1000);
   while(Serial1.available()){
     Serial.print("ESP > ");
     Serial.println(Serial1.readString());
@@ -92,19 +100,16 @@ bool contains(String src,String arg){
 
 void communicationWithESP(){
    Serial.println("Communication with ESP opened : ");
-   while(true){
-      while (Serial.available()==true) {
+   while (Serial.available()==true) {
         String str = Serial.readString();
         if(contains(str,"EXIT")==true){
           return;
         }
         Serial1.println(str);
-      }
-      while (Serial1.available()==true) {
+    }
+    while (Serial1.available()==true) {
         Serial.write(Serial1.read());
-      }
-   }
-        
+    }
     Serial.println("Communication with ESP closed");
 }
 
@@ -113,6 +118,8 @@ void setIp(){
 }
 
 void clearBuffer(bool print){
+
+
   if( print){
     Serial.println("Clearing buffer : ");
     while(Serial1.available()==true){
@@ -125,24 +132,24 @@ void clearBuffer(bool print){
       Serial1.readString();
     }
   }
+
+  //rx_empty();
 }
 
 bool connectToNetwork(){
-  //clearBuffer();
+  clearBuffer(false);
 
   for(int i = 0; i<MAX_CONNECTION_TEMPTATIVE; i++){
     Serial1.println(JOIN_NETWORK);
-    delay(1000);
-    communicationWithESP();
+    delay(5000);
     while(Serial1.available()==true){
       String response = Serial1.readString();
-      Serial.println(response);
-      if(endsWithOk(response)==true){
+      if(contains(response,"OK")==true){
         return true;
       }
     }
-    delay(1000);
-    //clearBuffer();
+    delay(1500);
+    clearBuffer(false);
   }
   return false;
 }
@@ -151,7 +158,7 @@ bool createNetwork(){
   for(int i = 0; i<MAX_CONNECTION_TEMPTATIVE; i++){
     Serial1.println(CREATE_NETWORK);
     delay(500);
-    if(endsWithOk(Serial1.readString())==true){
+    if(contains(Serial1.readString(),"OK")==true){
       return true;
     }
     delay(1000);
@@ -186,6 +193,8 @@ bool setupNetwork(){
 }
 
 void loop() {
+
+
   if(isHost==true){
     Serial.println("I am the host : ");
   }
@@ -193,7 +202,7 @@ void loop() {
     Serial.println("I am connected to the network");
   }
 
-  Serial1.println("AT+CWLIF");
+  Serial1.println("AT+CIFSR");
   Serial.println("IP :");
   Serial.println(Serial1.readString());
 

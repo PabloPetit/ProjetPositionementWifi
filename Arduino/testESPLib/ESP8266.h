@@ -28,7 +28,7 @@
 
 
 #ifdef ESP8266_USE_SOFTWARE_SERIAL
-#include "SoftwareSerial.h"
+#include <SoftwareSerial.h>
 #endif
 
 

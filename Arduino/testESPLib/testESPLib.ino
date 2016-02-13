@@ -14,7 +14,7 @@ void setup(void){
     if (eAT()) {
         Serial.print("AT OK\r\n");
     } else {
-        Serial.print("AT err\r\n");
+        Serial.print("AT Fail\r\n");
     }
     
     if (setOprToStationSoftAP()) {

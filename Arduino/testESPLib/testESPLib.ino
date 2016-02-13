@@ -1,8 +1,8 @@
 
-#define SSID        "ESP"
+#define SSID        "ESP2"
 #define PASSWORD    "password"
 
-
+bool isHost = false;
 
 void setup(void){
     Serial.begin(9600);
@@ -23,28 +23,44 @@ void setup(void){
         Serial.print("set mode3 err\r\n");
     }
 
-    
+    Serial.print("try to join ");
+    Serial.println(SSID);
     if (sATCWJAP(SSID, PASSWORD)) {
-        Serial.print("Join AP success\r\n");
-        Serial.print("IP: ");       
+        Serial.print("Join ");
+        Serial.print(SSID);
+        Serial.println(" Success");
+        Serial.println("IP: ");       
         Serial.println(getLocalIP().c_str());
     } 
     else {
-        Serial.print("Join AP failure\r\n");
-        Serial.print("Create network\r\n");
+        Serial.print("Join ");
+        Serial.print(SSID);
+        Serial.println(" Fail");
+        Serial.print("try to create ");
+        Serial.print(SSID);
+        Serial.println(" Network");
         if (sATCWSAP(SSID, PASSWORD, 3,4)) {
-            Serial.print("Create AP success\r\n");
+            Serial.print("Create ");
+            Serial.print(SSID);
+            Serial.println(" Network Success");
+            isHost = true;
         } 
         else {
-            Serial.print("Create AP failure\r\n");
+            Serial.print("Create ");
+            Serial.print(SSID);
+            Serial.println(" Network Fail");
         }
     }
     
     
 }
 
-void loop(void)
-{
+void loop(void){
+  delay(3000);
+  if(isHost){
+    Serial.println("list des IP connectées");
+    Serial.println(getJoinedDeviceIP());
+  }
 }
 
 bool restart(void)

@@ -7,6 +7,7 @@
 #define NETWORK_PSWD "\"password\""
 
 bool isHost = false;
+bool isConnected = false;
 
 void setup(void){
     Serial.begin(9600);
@@ -18,8 +19,17 @@ void setup(void){
 void loop(void){
   delay(3000);
   if(isHost){
+    Serial.println("Module Host");
     Serial.println("liste des IP connectees :");
     Serial.println(esp_get_Joined_Device_IP());
+  }else{
+    Serial.println("Module non-Host");
+    Serial.println("Connecté : ");
+    Serial.print(isConnected);
+    if(isConnected){
+      Serial.println("IP: ");
+      Serial.println(esp_get_local_IP().c_str());
+    }
   }
 }
 
@@ -48,6 +58,7 @@ void set_Network(void){
         Serial.println(" Success");
         Serial.println("IP: ");
         Serial.println(esp_get_local_IP().c_str());
+        isConnected = true;
     }
     else {
         Serial.print("Join ");

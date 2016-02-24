@@ -70,6 +70,7 @@ void set_Network(void){
         Serial.print("Join ");
         Serial.print(NETWORK_NAME);
         Serial.println(" Fail");
+        quit_AP();
         Serial.print("try to create ");
         Serial.print(NETWORK_NAME);
         Serial.println(" Network");

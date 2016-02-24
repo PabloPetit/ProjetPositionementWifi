@@ -37,7 +37,12 @@ void loop(void){
 
 void set_Network(void){
     //eps_restart();
-
+    if (quit_AP()) {
+        Serial.println("QUIT AP OK");
+    } else {
+        Serial.println("QUIT AP Fail");
+    }
+    
 
     if (eps_AT()) {
         Serial.println("AT OK");

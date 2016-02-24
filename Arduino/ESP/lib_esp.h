@@ -32,6 +32,8 @@ String esp_get_Joined_Device_IP(void);
 
 bool esp_set_Access_Point_Parameters(String ssid, String pwd, uint8_t chl, uint8_t ecn);
 
+bool quit_AP(void);
+
 
 
 #endif /* #ifndef __LIB_ESP__ */

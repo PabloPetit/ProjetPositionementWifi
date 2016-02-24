@@ -177,3 +177,10 @@ bool esp_set_Access_Point_Parameters(String ssid, String pwd, uint8_t chl, uint8
     }
     return false;
 }
+
+bool quit_AP(void){
+    String data;
+    rx_empty();
+    ESP8266.println("AT+CWQAP");
+    return recvFind("OK");
+}

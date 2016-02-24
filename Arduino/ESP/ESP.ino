@@ -3,7 +3,7 @@
 #define MODE3 3
 #define MAX_RESTART 5
 #define MAX_CONNECTION_TEMPTATIVE 5
-#define NETWORK_NAME "\"ESP\""
+#define NETWORK_NAME "\"ESP-AD_HOC\""
 #define NETWORK_PSWD "\"password\""
 
 bool isHost = false;
@@ -24,8 +24,9 @@ void loop(void){
     Serial.println(esp_get_Joined_Device_IP());
   }else{
     Serial.println("Module non-Host");
-    Serial.println("Connecté : ");
+    Serial.println("Connecte : ");
     Serial.print(isConnected);
+    Serial.println("");
     if(isConnected){
       Serial.println("IP: ");
       Serial.println(esp_get_local_IP().c_str());
@@ -35,7 +36,7 @@ void loop(void){
 
 
 void set_Network(void){
-    eps_restart();
+    //eps_restart();
 
 
     if (eps_AT()) {

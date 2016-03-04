@@ -16,6 +16,8 @@ bool recvFind(String target);
 
 String recvString(String target);
 
+String recvString2(String target, String target2);
+
 bool esp_set_wifi_mode_both(void);
 
 bool esp_ask_wifi_mode(uint8_t *mode);

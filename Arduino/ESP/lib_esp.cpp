@@ -57,6 +57,23 @@ String recvString(String target){
     return data;
 }
 
+String recvString2(String target, String target2){
+    String data;
+    char a;
+    unsigned long start = millis();
+    while (millis() - start < TIMEOUT) {
+        while(ESP8266.available() > 0) {
+            a = ESP8266.read();
+      if(a == '\0') continue;
+            data += a;
+        }
+        if (data.indexOf(target) != -1 || data.indexOf(target2) != -1) {
+            break;
+        }
+    }
+    return data;
+}
+
 bool esp_set_wifi_mode_both(void){
     uint8_t mode;
     if (!esp_ask_wifi_mode(&mode)) {
@@ -107,35 +124,31 @@ bool recvFindAndFilter(String target, String begin, String end, String &data){
 }
 
 bool esp_set_wifi_mode(uint8_t mode){
-    String data, data2;
+    String data;
     rx_empty();
     ESP8266.print("AT+CWMODE=");
     ESP8266.println(mode);
 
-    data = recvString("OK");
-    data2 = recvString("no change");
-    if (data.indexOf("OK") != -1 || data2.indexOf("no change") != -1) {
+    data = recvString2("OK", "no change");
+    if (data.indexOf("OK") != -1 || data.indexOf("no change") != -1) {
         return true;
     }
     return false;
 }
 
 bool esp_join_Access_Point(String ssid, String pwd){
-    String data, data2;
+    String data;
     rx_empty();
     ESP8266.print("AT+CWJAP=\"");
     ESP8266.print(ssid);
     ESP8266.print("\",\"");
     ESP8266.print(pwd);
     ESP8266.println("\"");
-
-    //TODO : ré-ecrire data et data2 pour ne pas attentre 20sec
-    data = recvString("OK");
-    data2 = recvString("FAIL");
+    data = recvString2("OK", "FAIL");
     if (data.indexOf("OK") != -1) {
         return true;
     }
-    else if(data2.indexOf("FAIL") != -1){
+    else if(data.indexOf("FAIL") != -1){
       return false;
     }
     return false;
@@ -158,7 +171,7 @@ String esp_get_Joined_Device_IP(void){
 }
 
 bool esp_set_Access_Point_Parameters(String ssid, String pwd, uint8_t chl, uint8_t ecn){
-    String data, data2;
+    String data;
     rx_empty();
     ESP8266.print("AT+CWSAP=\"");
     ESP8266.print(ssid);
@@ -170,8 +183,7 @@ bool esp_set_Access_Point_Parameters(String ssid, String pwd, uint8_t chl, uint8
     ESP8266.println(ecn);
 
     //TODO : ré-ecrire data et data2 pour ne pas attentre 20sec
-    data = recvString("OK");
-    data2 = recvString("ERROR");
+    data = recvString2("OK", "ERROR");
     if (data.indexOf("OK") != -1) {
         return true;
     }

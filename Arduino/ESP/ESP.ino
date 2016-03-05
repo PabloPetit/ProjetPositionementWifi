@@ -36,7 +36,7 @@ void loop(void){
 
 
 void set_Network(void){
-    //eps_restart();
+    eps_restart();
     if (quit_AP()) {
         Serial.println("QUIT AP OK");
     } else {

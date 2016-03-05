@@ -19,12 +19,11 @@ void setup(void){
 void loop(void){
   delay(3000);
   if(isHost){
-    Serial.print("Host : ");
-    Serial.println(isTheHost());
+    Serial.println("Host");
     Serial.println("liste des IP connectees :");
     Serial.println(esp_get_Joined_Device_IP());
   }else{
-    Serial.println("Module non-Host");
+    Serial.println("non-Host");
     Serial.print("Connected : ");
     Serial.println(isConnect());
     if(isConnected){

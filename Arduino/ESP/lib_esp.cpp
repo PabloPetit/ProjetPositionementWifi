@@ -139,11 +139,11 @@ bool esp_set_wifi_mode(uint8_t mode){
 bool esp_join_Access_Point(String ssid, String pwd){
     String data;
     rx_empty();
-    ESP8266.print("AT+CWJAP=\"");
+    ESP8266.print("AT+CWJAP=");
     ESP8266.print(ssid);
-    ESP8266.print("\",\"");
+    ESP8266.print(",");
     ESP8266.print(pwd);
-    ESP8266.println("\"");
+    ESP8266.println("");
     data = recvString2("OK", "FAIL");
     if (data.indexOf("OK") != -1) {
         return true;
@@ -173,11 +173,11 @@ String esp_get_Joined_Device_IP(void){
 bool esp_set_Access_Point_Parameters(String ssid, String pwd, uint8_t chl, uint8_t ecn){
     String data;
     rx_empty();
-    ESP8266.print("AT+CWSAP=\"");
+    ESP8266.print("AT+CWSAP=");
     ESP8266.print(ssid);
-    ESP8266.print("\",\"");
+    ESP8266.print(",");
     ESP8266.print(pwd);
-    ESP8266.print("\",");
+    ESP8266.print(",");
     ESP8266.print(chl);
     ESP8266.print(",");
     ESP8266.println(ecn);

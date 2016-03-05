@@ -4,7 +4,7 @@
 #define MAX_RESTART 5
 #define MAX_CONNECTION_TEMPTATIVE 5
 #define NETWORK_NAME "\"ESP2\""
-#define NETWORK_PSWD "\"0123456789\""
+#define NETWORK_PSWD "\"password\""
 
 bool isHost = false;
 bool isConnected = false;
@@ -42,7 +42,7 @@ void set_Network(void){
     } else {
         Serial.println("QUIT AP Fail");
     }
-    
+
 
     if (eps_AT()) {
         Serial.println("AT OK");

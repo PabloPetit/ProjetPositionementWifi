@@ -19,14 +19,14 @@ void setup(void){
 void loop(void){
   delay(3000);
   if(isHost){
-    Serial.println("Module Host");
+    Serial.print("Host : ");
+    Serial.println(isTheHost());
     Serial.println("liste des IP connectees :");
     Serial.println(esp_get_Joined_Device_IP());
   }else{
     Serial.println("Module non-Host");
-    Serial.println("Connecte : ");
-    Serial.print(isConnected);
-    Serial.println("");
+    Serial.print("Connected : ");
+    Serial.println(isConnect());
     if(isConnected){
       Serial.println("IP: ");
       Serial.println(esp_get_local_IP().c_str());
@@ -86,4 +86,18 @@ void set_Network(void){
             Serial.println(" Network Fail");
         }
     }
+}
+
+String isConnect(){
+  if(isConnected){
+    return "True";
+  }
+  return "False";
+}
+
+String isTheHost(){
+  if(isHost){
+    return "True";
+  }
+  return "False";
 }

@@ -231,3 +231,13 @@ bool qCWJAP(){
     ESP8266.println("AT+CWJAP?");
     return recvFindAndFilter("OK", "+CWJAP:", "\r\n\r\nOK", str_mode);
 }
+
+String esp_get_formated_local_IP(){
+    String list = esp_get_local_IP();
+    int index = list.indexOf('"')+1;
+    String  myString = list.substring(index);
+    index = myString.indexOf('"');
+    myString = myString.substring(0, index);
+
+    return myString;
+}

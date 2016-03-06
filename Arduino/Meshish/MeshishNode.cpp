@@ -38,29 +38,25 @@ void MeshishNode::setup(String password, bool primary){
   _isPrimary = primary;
   _password = password;
   //_chipId = ESP.getChipId(); // change
-  _chipId = 1;
+  _chipId = micros();
 
 
 
   bool ssidGenerated = _generateSSID();
 
-  if (!ssidGenerated && _debug)
-  {
+  if (!ssidGenerated && _debug){
     _serial->println("MeshishNode::setup: _generateSSID() returned false.");
   }
 
-  if (_isPrimary && ssidGenerated)
-  {
-    if (_debug)
-    {
+  if (_isPrimary && ssidGenerated){
+    if (_debug){
       _serial->println("MeshishNode::setup: Primary node creating SSID \"" + _ssid + "\"");
     }
     //WiFi.softAP(_ssid.c_str());
     esp_set_Access_Point_Parameters(_ssid.c_str(), _password, 3,4);
     _creatingAP = true;
   }
-  else
-  {
+  else{
     _scanAndConnect();
   }
 
@@ -101,7 +97,8 @@ void MeshishNode::loop(){
         _serial->println("\" established.");
         _serial->print("MeshishNode::loop: recieved IP Address ");
         //_serial->println(WiFi.localIP());
-        _serial->println(esp_get_local_IP());
+
+        _serial->println(esp_get_formated_local_IP());
       }
 
       // now create a secondary AP
@@ -112,7 +109,7 @@ void MeshishNode::loop(){
         //                   IPAddress(255, 255, 255, 0));
         //WiFi.softAP(_ssid.c_str());
         esp_set_Access_Point_Parameters(_ssid.c_str(), _password, 3,4);
-        _status = 1;
+        _status = 5;
         _creatingAP = true;
       }
 
@@ -225,8 +222,7 @@ unsigned int MeshishNode::getStatus(){
 
 
 void MeshishNode::_scanAndConnect(){
-  if (_debug)
-  {
+  if (_debug){
     _serial->println("scan start...");
   }
 
@@ -234,8 +230,7 @@ void MeshishNode::_scanAndConnect(){
   String liste = getAPList();
   split(liste, '\n');
   //_numNetworks = 1; // deg
-  if (_debug)
-  {
+  if (_debug){
     _serial->print(_numNetworks);
     _serial->println(" networks found in scan");
   }
@@ -243,31 +238,25 @@ void MeshishNode::_scanAndConnect(){
   // the index of the node with the highest rssi
   int maxDBmPrimary = -1;
 
-  for (int i = 0; i < _numNetworks; i++)
-  {
+  for (int i = 0; i < _numNetworks; i++){
     /*_apList[i] = AccessPoint();
     _apList[i].ssid     = WiFi.SSID(i);
     _apList[i].rssi     = WiFi.RSSI(i);
     _apList[i].encrypt  = WiFi.encryptionType(i);
     _apList[i].nodeType = _getNodeType(_apList[i]);
     */
-    if (_apList[i].nodeType == NODE_PRIMARY)
-    {
-      if (maxDBmPrimary == -1)
-      {
+    if (_apList[i].nodeType == NODE_PRIMARY){
+      if (maxDBmPrimary == -1){
         maxDBmPrimary = i;
       }
-      else
-      {
-        if (_apList[i].rssi > _apList[maxDBmPrimary].rssi)
-        {
+      else{
+        if (_apList[i].rssi > _apList[maxDBmPrimary].rssi){
           maxDBmPrimary = i;
         }
       }
     }
 
-    if (_debug)
-    {
+    if (_debug){
       _serial->print(_apList[i].ssid);
       _serial->print("\t");
       _serial->print(_apList[i].rssi);
@@ -279,10 +268,8 @@ void MeshishNode::_scanAndConnect(){
     }
   }
 
-  if (maxDBmPrimary != -1)
-  {
-    if (_debug)
-    {
+  if (maxDBmPrimary != -1){
+    if (_debug){
       _serial->print("MeshishNode::_scanAndConnect: connecting to ");
       _serial->println(_apList[maxDBmPrimary].ssid.c_str());
     }
@@ -308,35 +295,28 @@ void MeshishNode::_scanAndConnect(){
 }
 
 bool MeshishNode::_generateSSID(){
-  if (_isPrimary)
-  {
+  if (_isPrimary){
     _ssid = String("\""+_ssidPrefix + "_1_" + String(MESHISH_PRIMARY_IP) + "_" + String(_chipId)+"\"");
-    if (_debug)
-    {
+    if (_debug){
       _serial->print("MeshishNode::_generateSSID: _isPrimary, ssid:");
       _serial->println(_ssid);
     }
     return true;
   }
-  else
-  {
+  else{
 
-    if (getStatus() == WL_CONNECTED)
-    {
+    if (getStatus() == WL_CONNECTED){
       //IPAddress ip = WiFi.localIP();
-      String ip = esp_get_local_IP();
-      _ssid = String(_ssidPrefix + "_0_" + ip + "_" + String(_chipId));
-      if (_debug)
-      {
+      String ip = esp_get_formated_local_IP();
+      _ssid = String("\""+_ssidPrefix + "_0_" + ip + "_" + String(_chipId)+"\"");
+      if (_debug){
       _serial->print("MeshishNode::_generateSSID: !_isPrimary, ssid:");
       _serial->println(_ssid);
       }
       return true;
     }
-    else
-    {
-      if (_debug)
-      {
+    else{
+      if (_debug){
       _serial->println("MeshishNode::_generateSSID: !_isPrimary but status != WL_CONNECTED");
       }
     }
@@ -348,16 +328,14 @@ bool MeshishNode::_generateSSID(){
 
 
 unsigned int MeshishNode::_getNodeType(const AccessPoint& ap){
-  String prefix = ap.ssid.substring(0, _ssidPrefix.length());
+  int start = 1;
+  String prefix = ap.ssid.substring(start, _ssidPrefix.length()+start);
 
-  if (prefix.equals(_ssidPrefix))
-  {
-    if (ap.ssid.substring(_ssidPrefix.length(), _ssidPrefix.length() + 3).equals("_1_"))
-    {
+  if (prefix.equals(_ssidPrefix)){
+    if (ap.ssid.substring(_ssidPrefix.length()+start, _ssidPrefix.length()+start + 3).equals("_1_")){
       return NODE_PRIMARY;
     }
-    else if (ap.ssid.substring(_ssidPrefix.length(), _ssidPrefix.length() + 3).equals("_0_"))
-    {
+    else if (ap.ssid.substring(_ssidPrefix.length()+start, _ssidPrefix.length()+start + 3).equals("_0_")){
       return NODE_SECONDARY;
     }
   }

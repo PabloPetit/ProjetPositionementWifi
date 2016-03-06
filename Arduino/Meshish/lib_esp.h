@@ -44,5 +44,7 @@ int getIPStatusInt(void);
 
 bool qCWJAP();
 
+String esp_get_formated_local_IP();
+
 
 #endif /* #ifndef __LIB_ESP__ */

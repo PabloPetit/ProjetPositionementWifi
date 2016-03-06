@@ -10,6 +10,7 @@
 #define  WL_CONNECTED 2
 #define  WL_CONNECT_FAILED 4
 #define  WL_IDLE_STATUS 4
+#define  WL_CONNECTED_AND_CREATED 5
 
 #include "lib_esp.h"
 

@@ -5,7 +5,7 @@
 MeshishNode::MeshishNode():
   _isPrimary(false),
   _numNetworks(0),
-  _ssidPrefix("M"),
+  _ssidPrefix("EL_ESP"),
   _ssid(""),
   _chipId(0),
   _serial(NULL),

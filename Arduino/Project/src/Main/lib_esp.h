@@ -38,6 +38,6 @@ bool quit_AP(void);
 
 String getAPList(void);
 
-
+String getIPStatus(void);
 
 #endif /* #ifndef __LIB_ESP__ */

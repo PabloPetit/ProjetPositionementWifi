@@ -204,3 +204,12 @@ String getAPList(void){
     recvFindAndFilter("OK", "\r\r\n", "\r\n\r\nOK", list);
     return list;
 }
+
+String getIPStatus(void){
+    String list;
+    delay(100);
+    rx_empty();
+    ESP8266.println("AT+CIPSTATUS");
+    recvFindAndFilter("OK", "\r\r\n", "\r\n\r\nOK", list);
+    return list;
+}

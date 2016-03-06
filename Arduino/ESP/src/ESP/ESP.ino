@@ -12,7 +12,9 @@ bool isConnected = false;
 void setup(void){
     Serial.begin(9600);
     ESP8266.begin(115200);
-
+    Serial.println("SCAN");
+    Serial.print(getAPList());
+    Serial.println("FIN SCAN");
     set_Network();
 }
 
@@ -99,4 +101,21 @@ String isTheHost(){
     return "True";
   }
   return "False";
+}
+
+
+
+void set(){
+  eps_restart();
+  if (quit_AP()) {
+      Serial.println("QUIT AP OK");
+  } else {
+      Serial.println("QUIT AP Fail");
+  }
+  if (esp_set_wifi_mode_both()) {
+      Serial.println("set mode3 ok");
+  } else {
+      Serial.println("set mode3 err");
+  }
+
 }

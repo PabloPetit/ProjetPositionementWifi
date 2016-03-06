@@ -1,8 +1,7 @@
-#include <ESP8266WiFi.h>
-#include <WiFiMesh.h>
+#include "ESP8266wifi.h"
+#include "WiFiMesh.h"
 
-/* Create the mesh node object */
-WiFiMesh mesh_node = WiFiMesh(ESP.getChipId(), manageRequest);
+WiFiMesh mesh_node;
 
 /**
  * Callback for when other nodes send you data
@@ -22,6 +21,9 @@ String manageRequest(String request)
 
 void setup()
 {
+  /* Create the mesh node object */
+  mesh_node = WiFiMesh(ESP.getChipId(), manageRequest);
+
 	Serial.begin(115200);
 	delay(10);
 

@@ -38,7 +38,8 @@ void MeshishNode::setup(String password, bool primary){
   _isPrimary = primary;
   _password = password;
   //_chipId = ESP.getChipId(); // change
-  _chipId = micros();
+  randomSeed(analogRead(0));
+  _chipId = random(micros());
 
 
 

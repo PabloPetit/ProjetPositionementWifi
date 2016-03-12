@@ -241,3 +241,108 @@ String esp_get_formated_local_IP(){
 
     return myString;
 }
+
+
+bool enableMUX(void){
+    return sATCIPMUX(1);
+}
+
+bool disableMUX(void){
+    return sATCIPMUX(0);
+}
+
+bool sATCIPMUX(uint8_t mode){
+    String data;
+    rx_empty();
+    ESP8266.print("AT+CIPMUX=");
+    ESP8266.println(mode);
+
+    data = recvString("OK", "Link is builded");
+    if (data.indexOf("OK") != -1) {
+        return true;
+    }
+    return false;
+}
+
+bool createTCP(String addr, uint32_t port){
+    return sATCIPSTARTSingle("TCP", addr, port);
+}
+
+bool releaseTCP(void){
+    return eATCIPCLOSESingle();
+}
+
+bool registerUDP(String addr, uint32_t port){
+    return sATCIPSTARTSingle("UDP", addr, port);
+}
+
+bool unregisterUDP(void){
+    return eATCIPCLOSESingle();
+}
+
+bool createTCP(uint8_t mux_id, String addr, uint32_t port){
+    return sATCIPSTARTMultiple(mux_id, "TCP", addr, port);
+}
+
+bool releaseTCP(uint8_t mux_id){
+    return sATCIPCLOSEMulitple(mux_id);
+}
+
+bool registerUDP(uint8_t mux_id, String addr, uint32_t port){
+    return sATCIPSTARTMultiple(mux_id, "UDP", addr, port);
+}
+
+bool unregisterUDP(uint8_t mux_id){
+    return sATCIPCLOSEMulitple(mux_id);
+}
+
+bool setTCPServerTimeout(uint32_t timeout){
+    return sATCIPSTO(timeout);
+}
+
+bool startTCPServer(uint32_t port){
+    if (sATCIPSERVER(1, port)) {
+        return true;
+    }
+    return false;
+}
+
+bool stopTCPServer(void){
+    sATCIPSERVER(0);
+    restart();
+    return false;
+}
+
+bool startServer(uint32_t port){
+    return startTCPServer(port);
+}
+
+bool stopServer(void){
+    return stopTCPServer();
+}
+
+bool send(const uint8_t *buffer, uint32_t len){
+    return sATCIPSENDSingle(buffer, len);
+}
+
+bool send(uint8_t mux_id, const uint8_t *buffer, uint32_t len){
+    return sATCIPSENDMultiple(mux_id, buffer, len);
+}
+
+uint32_t recv(uint8_t *buffer, uint32_t buffer_size, uint32_t timeout){
+    return recvPkg(buffer, buffer_size, NULL, timeout, NULL);
+}
+
+uint32_t recv(uint8_t mux_id, uint8_t *buffer, uint32_t buffer_size, uint32_t timeout){
+    uint8_t id;
+    uint32_t ret;
+    ret = recvPkg(buffer, buffer_size, NULL, timeout, &id);
+    if (ret > 0 && id == mux_id) {
+        return ret;
+    }
+    return 0;
+}
+
+uint32_t recv(uint8_t *coming_mux_id, uint8_t *buffer, uint32_t buffer_size, uint32_t timeout){
+    return recvPkg(buffer, buffer_size, NULL, timeout, coming_mux_id);
+}

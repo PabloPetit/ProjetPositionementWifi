@@ -347,7 +347,7 @@ void MeshishNode::split(String line, char sep){
   int i = 0;
   int startIndex = 0;
   int endIndex = 0;
-  while ((endIndex = line.indexOf(sep, startIndex)) != -1 && i < 9) {
+  while ((endIndex = line.indexOf(sep, startIndex)) != -1 && i < MESHISH_MAX_AP_SCAN -1) {
     _apList[i] = AccessPoint();
     String s = line.substring(startIndex, endIndex);
     set_ap(s, &_apList[i]);

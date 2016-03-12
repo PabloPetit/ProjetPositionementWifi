@@ -13,5 +13,6 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   node.loop();
+  delay(500);
   //Serial.println(node.getStatus());
 }

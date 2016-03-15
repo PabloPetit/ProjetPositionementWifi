@@ -1,5 +1,6 @@
 import socket
 import multiprocessing
+from queue import Queue
 from threading import *
 import math
 import sys
@@ -43,7 +44,8 @@ console_th = None # Thread qui gère la console
 
 def main():
 	console_th = console()
-	server_th = server(4242,5)
+	queue = console_th.queue
+	server_th = server(4242,5, queue)
 
 	console_th.start()
 	server_th.start()
@@ -88,9 +90,11 @@ class console(Thread):
 		Thread.__init__(self)
 		self.stack = []
 		self.lock = False
+		self.queue = Queue()
 	def run(self):
+
 		while(True):
-			st = raw_input('[server]>')
+			st = input('[server]>')
 			if st.lower() in ["exit","quit"]:
 				quit()
 			elif st.lower() in ["list_m"]:
@@ -123,23 +127,24 @@ class console(Thread):
 
 
 class server(Thread):
-	def __init__(self, port, maxQueue):
+	def __init__(self, port, maxQueue, thread_queue=None):
 		Thread.__init__(self)
 		self.sock = None
 		self.port = port
 		self.maxQueue = maxQueue
+		self.thread_queue = thread_queue
 
 	def run(self):
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.sock.bind(('',self.port))
-		self.sock.listen(maxQueue)
-		console_th.println("Le server est en ligne\n"+getsockname())
+		self.sock.listen(self.maxQueue)
+		console_th.println("Le server est en ligne\n"+self.sock.getsockname())
 
 		while(True):
-			sock,info = server_socket.accept()
+			sock,info = self.server_socket.accept()
 			console_th.println("Un nouveau client client s'est connecté : ip : "+info[0]+" port : "+info[1])
-			client = client(sock,info,id_cnt)
-			id_cnt+=1
+			client = client(sock,info, self.id_cnt)
+			self.client.id_cnt+=1
 			nw_client = thread_client(client)
 			client_list.append(nw_client)
 			nw_client.start()
@@ -178,20 +183,20 @@ class thread_client(Thread):
 
 	def run(self):
 		# 1 : on donne son id au client
-		if not set_client_id() :
+		if not self.set_client_id() :
 			console_th.println("Le client "+client.sock.getsockname()+" ne repond pas, déconnexion")
-			close_connexion()
+			self.close_connexion()
 
-		if not ask_ty():
+		if not self.ask_ty():
 			console_th.println("Le client "+client.sock.getsockname()+" a repondu un code erroné, deconnexion")
-			close_connexion()
+			self.close_connexion()
 
-		loop()
+		self.loop()
 
 
 	def set_client_id(self):
 		i=0
-		while(i<MAX_ATTEMPS): #On vas tenter plusieurs fois de communiquer avec le client, apres quoi on fermera la sock si pas de reponse
+		while(i<self.MAX_ATTEMPS): #On vas tenter plusieurs fois de communiquer avec le client, apres quoi on fermera la sock si pas de reponse
 			sock.send(messages(client.id,SET_ID,client.id).str()) # Envoi au nouveau client son id
 			to_read = []
 			try:

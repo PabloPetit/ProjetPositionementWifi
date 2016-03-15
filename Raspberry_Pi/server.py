@@ -88,10 +88,9 @@ class console(Thread):
 		Thread.__init__(self)
 		self.stack = []
 		self.lock = False
-		
 	def run(self):
 		while(True):
-			st = input('[server]>')
+			st = raw_input('[server]>')
 			if st.lower() in ["exit","quit"]:
 				quit()
 			elif st.lower() in ["list_m"]:
@@ -105,10 +104,10 @@ class console(Thread):
 			elif st.lower() in ["send_msg"]:
 				print("Envoi un message à un mobile")
 
-	def quit(self):
+	def quit():
 		print("Not implemented yet")
 
-	def println(self,st): 
+	def println(st): 
 		#Le but de cette fonction sera de pouvoir traivailler sur un seul terminal
 		#tout en evitant les print intempestif
 		#Elle devra bloquer les print si l'utilisateur est entrain de saisir une commande
@@ -133,7 +132,7 @@ class server(Thread):
 	def run(self):
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.sock.bind(('',self.port))
-		self.sock.listen(self.maxQueue)
+		self.sock.listen(maxQueue)
 		console_th.println("Le server est en ligne\n"+getsockname())
 
 		while(True):

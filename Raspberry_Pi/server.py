@@ -6,6 +6,7 @@ import math
 import sys
 import time
 import os
+import select
 # Protocole, message = DEST TYPE MESS
 
 MSG_SZ = 32
@@ -37,20 +38,21 @@ server_id = 0 #Le server à toujours pour id 0
 anchor_list = [] #Liste des ancres connectées
 mobile_list = [] #Liste des mobiles connecté
 client_list = [] #Liste des thread client 
-id_cnt = 1 #Compteur d'ID
+ #Compteur d'ID
 
 server_th = None # Thread qui gère le server
 console_th = None # Thread qui gère la console
 
+console_queue = Queue()
+
 def main():
+	#console_queue = 
+
 	console_th = console()
-	queue = console_th.queue
-	server_th = server(4242,5, queue)
+	server_th = server(4254,5)
 
 	console_th.start()
 	server_th.start()
-
-
 
 """
 @@@@@@@@@@@@@@@@@@@@@@@
@@ -68,13 +70,23 @@ class client:
 		self.ty = -1
 
 class message:
-	def __init__(self,dest,code,msg):
-		self.dest = dest
-		self.type = code
-		self.msg = msg
+	def __init__(self,dest=None,code=None,msg=None,string=None):
+		print(dest)
+		print(code)
+		print(msg)
+		print(string)
+		if dest and code and msg :
+			self.dest = dest
+			self.type = code
+			self.msg = msg
+
+		elif string :
+			self.dest = string[0]
+			self.type = string[1]
+			self.msg = string[2:32]
 
 	def str(self):
-		return str(bytes(dest))+str(bytes(type))+(mess).encode()
+		return (str(self.dest)+str(self.type)+str(self.msg)).encode()
 
 
 
@@ -90,13 +102,19 @@ class console(Thread):
 		Thread.__init__(self)
 		self.stack = []
 		self.lock = False
-		self.queue = Queue()
-	def run(self):
+		self.queue = console_queue
 
+	def queueService(self):
+		while not self.queue.empty():
+			self.println(self.queue.get())
+
+	def run(self):
 		while(True):
-			st = input('[server]>')
+			self.queueService()
+
+			st = input('[server]>') # Pas bon, mettre un select
 			if st.lower() in ["exit","quit"]:
-				quit()
+				self.quit()
 			elif st.lower() in ["list_m"]:
 				print("Liste des mobile")
 			elif st.lower() in ["list_a"]:
@@ -127,25 +145,25 @@ class console(Thread):
 
 
 class server(Thread):
-	def __init__(self, port, maxQueue, thread_queue=None):
+	def __init__(self, port, maxQueue, console_queue=None):
 		Thread.__init__(self)
 		self.sock = None
 		self.port = port
 		self.maxQueue = maxQueue
-		self.thread_queue = thread_queue
-
+		self.console_queue = console_queue
+		self.id_cnt = 1
 	def run(self):
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.sock.bind(('',self.port))
 		self.sock.listen(self.maxQueue)
-		console_th.println("Le server est en ligne\n"+self.sock.getsockname())
+		console_queue.put("Le server est en ligne\n"+str(self.sock.getsockname()))
 
 		while(True):
-			sock,info = self.server_socket.accept()
-			console_th.println("Un nouveau client client s'est connecté : ip : "+info[0]+" port : "+info[1])
-			client = client(sock,info, self.id_cnt)
-			self.client.id_cnt+=1
-			nw_client = thread_client(client)
+			sock,info = self.sock.accept()
+			console_queue.put("Un nouveau client client s'est connecté : ip : "+str(info[0])+" port : "+str(info[1]))
+			self.client = client(sock,info, self.id_cnt)
+			self.id_cnt+=1
+			nw_client = thread_client(self.client)
 			client_list.append(nw_client)
 			nw_client.start()
 			
@@ -170,13 +188,13 @@ class thread_client(Thread):
 		self.client = client
 
 	def close_connexion(self):
-		client.sock.close()
+		self.client.sock.close()
 		client_list.remove(self)
-		if client.ty == TY_ANCH :
+		if self.client.ty == TY_ANCH :
 			anchor_list.remove(client)
-		elif client.ty == TY_MOB :
+		elif self.client.ty == TY_MOB :
 			mobile_list.remove(client)
-		elif client.ty == TY_BOTH :
+		elif self.client.ty == TY_BOTH :
 			anchor_list.remove(client)
 			mobile_list.remove(client)
 		self.stop()
@@ -184,28 +202,27 @@ class thread_client(Thread):
 	def run(self):
 		# 1 : on donne son id au client
 		if not self.set_client_id() :
-			console_th.println("Le client "+client.sock.getsockname()+" ne repond pas, déconnexion")
+			console_queue.put("Le client "+str(self.client.sock.getsockname())+" ne repond pas, déconnexion")
 			self.close_connexion()
 
 		if not self.ask_ty():
-			console_th.println("Le client "+client.sock.getsockname()+" a repondu un code erroné, deconnexion")
+			console_queue.put("Le client "+str(self.client.sock.getsockname())+" a repondu un code erroné, deconnexion")
 			self.close_connexion()
 
 		self.loop()
 
-
 	def set_client_id(self):
 		i=0
 		while(i<self.MAX_ATTEMPS): #On vas tenter plusieurs fois de communiquer avec le client, apres quoi on fermera la sock si pas de reponse
-			sock.send(messages(client.id,SET_ID,client.id).str()) # Envoi au nouveau client son id
+			self.client.sock.send(message(dest=self.client.id, code=SET_ID, msg=self.client.id).str()) # Envoi au nouveau client son id
 			to_read = []
 			try:
-				to_read, wlist, xlist = select.select(client.sock,[], [], TIMEOUT)
+				to_read, wlist, xlist = select.select([self.client.sock],[], [], thread_client.TIMEOUT)
 			except select.error:
 				pass
 			else:
-				msg = to_read.recv(MSG_SZ)
-				if message_type(msg) == CNF_ID:
+				msg = self.client.sock.recv(MSG_SZ) #MESSAGE
+				if msg.type == CNF_ID:
 					return true
 
 			i+=1
@@ -214,7 +231,7 @@ class thread_client(Thread):
 	def ask_ty(self):
 		i=0
 		while(i<MAX_ATTEMPS):
-			sock.send(messages(client.id,ASK_TY,server_id).str()) # Demande son type au client
+			self.client.sock.send(messages(dest=self.client.id, code=ASK_TY, msg=server_id).str()) # Demande son type au client
 			to_read = []
 			try:
 				to_read, wlist, xlist = select.select(client.sock,[], [], TIMEOUT)
@@ -224,17 +241,17 @@ class thread_client(Thread):
 				msg = to_read.recv(MSG_SZ)
 				ty = -1 #TODO PARSER LES MESSAGE
 				if ty == TY_ANCH : 
-					console_th.println("Le client "+client.id+" est une ancre")
-					anchor_list.append([client])
+					console_queue.put("Le client "+str(self.client.id)+" est une ancre")
+					anchor_list.append([self.client])
 					return True;
 				elif ty == TY_MOB : 
-					console_th.println("Le client "+client.id+" est un mobile")
-					mobile_list.append([client])
+					console_queue.put("Le client "+str(self.client.id)+" est un mobile")
+					mobile_list.append([self.client])
 					return True
 				elif ty == 2 :
-					console_th.println("Le client "+client.id+" est une ancre et un mobile")
-					anchor_list.append([client])
-					mobile_list.append([client])
+					console_queue.put("Le client "+str(self.client.id)+" est une ancre et un mobile")
+					anchor_list.append([self.client])
+					mobile_list.append([self.client])
 					return True
 				else :
 					return False;

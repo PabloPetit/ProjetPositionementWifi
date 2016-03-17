@@ -9,30 +9,32 @@ import os
 import select
 # Protocole, message = DEST TYPE MESS
 
-MSG_SZ = 32
-MSG_LN = 30
+TYPES = {}
 
-SET_ID = 0 # Donne son id à un noeud : MESS = id
-CNF_ID = 1 # Confirme la reception de l'id : MESS = NULL
-ASK_TY = 2 # Demande le type d'un noeud : MESS = id 
-RES_TY = 3 # Donne son type  : MESS = A | M
-ASK_AL = 4 # Demande la liste des ancres : MESS = id
-RES_AL = 5 # Donne la liste des ancres : MESS = int + id*
+TYPES['MSG_SZ'] = 32 
+TYPES['MSG_LN'] = 30
+
+TYPES['SET_ID'] = 0 # Donne son id à un noeud : MESS = id
+TYPES['CNF_ID'] = 1 # Confirme la reception de l'id : MESS = NULL
+TYPES['ASK_TY'] = 2 # Demande le type d'un noeud : MESS = id 
+TYPES['RES_TY'] = 3 # Donne son type  : MESS = A | M
+TYPES['ASK_AL'] = 4 # Demande la liste des ancres : MESS = id
+TYPES['RES_AL'] = 5 # Donne la liste des ancres : MESS = int + id*
 """ Il sera peut etre mieux d'envoyer un premier message annoçant la taille de la liste, puis autant de message que d'item 
 	dans la liste
  """
-ASK_DT = 6 # Demande une evaluation de distance : MESS = id
-RES_DT = 7 # Renvoi l'evaluation de distance : MESS = int
-ASK_PS = 8 # Demande sa position à une ancre : MESS = id
-RES_PS = 9 # Renvoi sa position : MESS = int+int
+TYPES['ASK_DT'] = 6 # Demande une evaluation de distance : MESS = id
+TYPES['RES_DT'] = 7 # Renvoi l'evaluation de distance : MESS = int
+TYPES['ASK_PS'] = 8 # Demande sa position à une ancre : MESS = id
+TYPES['RES_PS'] = 9 # Renvoi sa position : MESS = int+int
 
 #Dans le cas des demande, l'id envoyé est celle de l'envoyeur pour que
 #le receveur sache à qui envoyer la réponse
 
 
-TY_ANCH = 0
-TY_MOB = 1
-TY_BOTH = 2
+TYPES['TY_ANCH'] = 0
+TYPES['TY_MOB'] = 1
+TYPES['TY_BOTH'] = 2
 
 server_id = 0 #Le server à toujours pour id 0
 anchor_list = [] #Liste des ancres connectées
@@ -49,7 +51,7 @@ def main():
 	#console_queue = 
 
 	console_th = console()
-	server_th = server(4254,5)
+	server_th = server(1238,5)
 
 	console_th.start()
 	server_th.start()
@@ -70,23 +72,25 @@ class client:
 		self.ty = -1
 
 class message:
-	def __init__(self,dest=None,code=None,msg=None,string=None):
-		print(dest)
-		print(code)
-		print(msg)
-		print(string)
-		if dest and code and msg :
+	global MSG_SZ
+	def __init__(self,dest=None,ty=None,msg=None,string=None):
+		self.dest = "DEST"
+		self.ty = "TYPE"
+		self.msg = "MESS"
+		if dest : 
 			self.dest = dest
-			self.type = code
+		if ty :
+			self.ty = ty
+		if msg : 
 			self.msg = msg
-
-		elif string :
+		if string :
 			self.dest = string[0]
-			self.type = string[1]
+			self.ty = string[1]
 			self.msg = string[2:32]
 
 	def str(self):
-		return (str(self.dest)+str(self.type)+str(self.msg)).encode()
+		tmp = (str(self.dest)+str(self.ty)+str(self.msg)).encode()
+		return tmp#+ "#"*(MSG_SZ-len(tmp))
 
 
 
@@ -97,6 +101,8 @@ class message:
 """
 
 class console(Thread):
+
+	global TYPES
 
 	def __init__(self):
 		Thread.__init__(self)
@@ -110,9 +116,9 @@ class console(Thread):
 
 	def run(self):
 		while(True):
-			self.queueService()
-
-			st = input('[server]>') # Pas bon, mettre un select
+			#self.queueService()
+			time.sleep(1);
+			st = ""#input('[server]>') # Pas bon, mettre un select
 			if st.lower() in ["exit","quit"]:
 				self.quit()
 			elif st.lower() in ["list_m"]:
@@ -182,6 +188,7 @@ class thread_client(Thread):
 
 	MAX_ATTEMPS = 5 #Nombre de repetition pour les communication
 	TIMEOUT = 5 #Temps d'attente d'une reponse
+	global TYPES
 
 	def __init__(self, client):
 		Thread.__init__(self)
@@ -214,15 +221,15 @@ class thread_client(Thread):
 	def set_client_id(self):
 		i=0
 		while(i<self.MAX_ATTEMPS): #On vas tenter plusieurs fois de communiquer avec le client, apres quoi on fermera la sock si pas de reponse
-			self.client.sock.send(message(dest=self.client.id, code=SET_ID, msg=self.client.id).str()) # Envoi au nouveau client son id
+			self.client.sock.send(message(dest=self.client.id, ty=thread_client.TYPES['SET_ID'], msg=self.client.id).str()) # Envoi au nouveau client son id
 			to_read = []
 			try:
 				to_read, wlist, xlist = select.select([self.client.sock],[], [], thread_client.TIMEOUT)
 			except select.error:
 				pass
 			else:
-				msg = self.client.sock.recv(MSG_SZ) #MESSAGE
-				if msg.type == CNF_ID:
+				msg = message(string=self.client.sock.recv(thread_client.TYPES['MSG_SZ']).decode())#MESSAGE
+				if msg.ty == TYPES['CNF_ID']:
 					return true
 
 			i+=1
@@ -230,21 +237,21 @@ class thread_client(Thread):
 
 	def ask_ty(self):
 		i=0
-		while(i<MAX_ATTEMPS):
-			self.client.sock.send(messages(dest=self.client.id, code=ASK_TY, msg=server_id).str()) # Demande son type au client
+		while(i<thread_client.MAX_ATTEMPS):
+			self.client.sock.send(messages(dest=self.client.id, ty=thread_client.TYPES['ASK_TY'], msg=server_id).str()) # Demande son type au client
 			to_read = []
 			try:
-				to_read, wlist, xlist = select.select(client.sock,[], [], TIMEOUT)
+				to_read, wlist, xlist = select.select([self.client.sock],[], [], TIMEOUT)
 			except select.error:
 				pass
 			else:
-				msg = to_read.recv(MSG_SZ)
+				msg = message(string=self.client.sock.recv(MSG_SZ).decode())
 				ty = -1 #TODO PARSER LES MESSAGE
-				if ty == TY_ANCH : 
+				if ty == thread_client.TYPES['TY_ANCH'] : 
 					console_queue.put("Le client "+str(self.client.id)+" est une ancre")
 					anchor_list.append([self.client])
 					return True;
-				elif ty == TY_MOB : 
+				elif ty == thread_client.TYPES['TY_MOB'] : 
 					console_queue.put("Le client "+str(self.client.id)+" est un mobile")
 					mobile_list.append([self.client])
 					return True

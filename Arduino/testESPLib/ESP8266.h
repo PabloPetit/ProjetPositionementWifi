@@ -28,7 +28,7 @@
 
 
 #define TIMEOUT 10000
-#define ESP8266 Serial1
+#define ESPSerial Serial1
 
 
 /**

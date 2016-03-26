@@ -117,7 +117,7 @@ class console(Thread):
 	def run(self):
 		while(True):
 			#self.queueService()
-			time.sleep(1);
+			time.sleep(1)
 			st = ""#input('[server]>') # Pas bon, mettre un select
 			if st.lower() in ["exit","quit"]:
 				self.quit()
@@ -132,10 +132,10 @@ class console(Thread):
 			elif st.lower() in ["send_msg"]:
 				print("Envoi un message à un mobile")
 
-	def quit():
+	def quit(self):
 		print("Not implemented yet")
 
-	def println(st): 
+	def println(self,st):
 		#Le but de cette fonction sera de pouvoir traivailler sur un seul terminal
 		#tout en evitant les print intempestif
 		#Elle devra bloquer les print si l'utilisateur est entrain de saisir une commande

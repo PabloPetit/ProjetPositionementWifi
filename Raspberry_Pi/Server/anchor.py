@@ -20,7 +20,7 @@ console_th = None # Thread qui gère la console
 
 def main():
      console_th = console()
-     socket_th = com()
+     socket_th = com("localhost",4012)
 
      console_th.start()
      socket_th.start()
@@ -65,8 +65,9 @@ class com(Thread):
     TIMEOUT = 5 #Temps d'attente d'une reponse
 
     def __init__(self,host,port):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect((host, port))
+        self.host = host
+        self.port = port
+        self.sock = None
 
     def ask_id(self):
         global TYPES
@@ -115,6 +116,10 @@ class com(Thread):
 
     def run(self):
         global id
+
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect((self.host, self.port))
+
         self.set_id()
 
         console_queue.put("L'id a été reçu : "+str(id))
@@ -136,4 +141,4 @@ class com(Thread):
 
 
 
-
+main()

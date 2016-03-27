@@ -4,6 +4,7 @@ import select
 from queue import Queue
 from threading import *
 from proto import *
+import sys
 
 
 server_id = 0 #Le server à toujours pour id 0
@@ -27,7 +28,7 @@ def main():
     print("Lancement du serveur ...")
 
     console_th = console()
-    server_th = server(4009,5)
+    server_th = server(4012,5)
 
     console_th.start()
     server_th.start()
@@ -42,44 +43,53 @@ def main():
 class console(Thread):
 
     global TYPES
+    TIMEOUT = 5
 
     def __init__(self):
         Thread.__init__(self)
         self.stack = []
         self.lock = False
         self.queue = console_queue
+        self.terminated = False
 
     def queueService(self):
         while not self.queue.empty():
-            self.println(self.queue._get())
+            print(self.queue._get())
 
     def run(self):
         while(True):
+            if self.terminated :
+                return
             self.queueService()
             time.sleep(1)
-            st = ""#input('[server]>') # Pas bon, mettre un select
-            if st.lower() in ["exit","quit"]:
-                self.quit()
-            elif st.lower() in ["list_m"]:
-                print("Liste des mobile")
-            elif st.lower() in ["list_a"]:
-                print("Liste des ancre")
-            elif st.lower() in ["state"]:
-                print("Etat global du server")
-            elif st.lower() in ["reboot_server"]:
-                print("Relance le server")
-            elif st.lower() in ["send_msg"]:
-                print("Envoi un message à un mobile")
 
-    def quit(self):
-        print("Not implemented yet")
+            i, o, e = select.select( [sys.stdin], [], [], console.TIMEOUT )
 
-    def println(self,st):
-        #Le but de cette fonction sera de pouvoir traivailler sur un seul terminal
-        #tout en evitant les print intempestif
-        #Elle devra bloquer les print si l'utilisateur est entrain de saisir une commande
-        #puis les imprimer quand il fini son operation
-        print(st)
+            if i :
+
+                st = sys.stdin.readline().strip()
+
+                if st.lower() in ["exit","quit"]:
+                    self.quit()
+                elif st.lower() in ["list_m"]:
+                    print("Liste des mobile")
+                    print(mobile_list)
+                elif st.lower() in ["list_a"]:
+                    print("Liste des ancre")
+                    print(anchor_list)
+                elif st.lower() in ["state"]:
+                    print("Etat global du server")
+                elif st.lower() in ["reboot_server"]:
+                    print("Relance le server")
+                elif st.lower() in ["send_msg"]:
+                    print("Envoi un message à un mobile")
+
+    def quit(self, empty = True):
+        self.terminated = True
+        print("La console a été coupée")
+        if empty :
+            print("Vidage de la file :")
+            self.queueService()
 
 
 """
@@ -111,8 +121,6 @@ class server(Thread):
             nw_client = thread_client(self.client)
             client_list.append(nw_client)
             nw_client.start()
-
-
 
 
 
@@ -194,16 +202,16 @@ class thread_client(Thread):
                 ty = int(msg.msg)
                 if ty == TYPES['TY_ANCH'] :
                     console_queue.put("Le client "+str(self.client.id)+" est une ancre")
-                    anchor_list.append([self.client])
+                    anchor_list.append(self.client)
                     return True;
                 elif ty == TYPES['TY_MOB'] :
                     console_queue.put("Le client "+str(self.client.id)+" est un mobile")
-                    mobile_list.append([self.client])
+                    mobile_list.append(self.client)
                     return True
-                elif ty == 2 :
+                elif ty == TYPES['TY_BOTH'] :
                     console_queue.put("Le client "+str(self.client.id)+" est une ancre et un mobile")
-                    anchor_list.append([self.client])
-                    mobile_list.append([self.client])
+                    anchor_list.append(self.client)
+                    mobile_list.append(self.client)
                     return True
             i+=1
         return False
@@ -225,20 +233,20 @@ class thread_client(Thread):
             if msg.dest != 0 :
                 sent = False
                 for mob in mobile_list :
-                    if mob.client.id == msg.dest :
-                        mob.client.sock.send(msg.str())
+                    if mob.id == msg.dest :
+                        mob.sock.send(msg.str())
                         sent = True
                         break
 
                 if not sent :
                     for mob in anchor_list :
-                        if mob.client.id == msg.dest :
-                            mob.client.sock.send(msg.str())
+                        if mob.id == msg.dest :
+                            mob.sock.send(msg.str())
                             sent = True
-                            break;
+                            break
 
                 if sent :
-                    console_queue.put("Message du client "+(self.client.id)+"à été retransmit vers le client "+str(msg.dest))
+                    console_queue.put("Message du client "+str(self.client.id)+"à été retransmit vers le client "+str(msg.dest))
 
             else :
                 console_queue.put("Le message demande à être traité par le serveur")

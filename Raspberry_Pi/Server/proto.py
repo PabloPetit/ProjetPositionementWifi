@@ -62,8 +62,8 @@ class message:
             self.msg = string[2:TYPES['MSG_SZ']]
 
     def str(self):
-        tmp = (str(self.dest)+str(self.ty)+str(self.msg)).encode()
-        return tmp#+ "#"*(MSG_SZ-len(tmp))
+        tmp = (str(self.dest)+str(self.ty)+str(self.msg))
+        return (tmp+('#'*(TYPES['MSG_SZ']-len(tmp)))).encode()
 
     def toString(self):
         return "Message : \nDEST : "+str(self.dest)+" TYPE : "+str(self.ty)+" MESS : "+str(self.msg)

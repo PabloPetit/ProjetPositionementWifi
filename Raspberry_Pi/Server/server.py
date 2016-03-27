@@ -168,9 +168,8 @@ class thread_client(Thread):
         console_queue.put("Envoi de l'id au client "+str(self.client.id))
         while(i<self.MAX_ATTEMPS): #On vas tenter plusieurs fois de communiquer avec le client, apres quoi on fermera la sock si pas de reponse
             self.client.sock.send(message(dest=self.client.id, ty=TYPES['SET_ID'], msg=self.client.id).str()) # Envoi au nouveau client son id
-            to_read = []
             try:
-                to_read, wlist, xlist = select.select([self.client.sock],[], [], thread_client.TIMEOUT)
+                select.select([self.client.sock],[], [], thread_client.TIMEOUT)
             except select.error:
                 pass
             else:
@@ -179,6 +178,17 @@ class thread_client(Thread):
                     return True
             i+=1
         return False
+
+    def new_id(self):
+        if self.client.ty == TYPES['TY_ANCH'] :
+            anchor_list.remove(client)
+        elif self.client.ty == TYPES['TY_MOB'] :
+            mobile_list.remove(client)
+        elif self.client.ty == TYPES['TY_BOTH'] :
+            anchor_list.remove(client)
+            mobile_list.remove(client)
+
+        self.set_client_id()
 
     def ask_ty(self):
         global TYPES
@@ -209,6 +219,15 @@ class thread_client(Thread):
             i+=1
         return False
 
+    def send_anchor_list(self):
+
+        message = ""
+
+        for i in range(0,max(TYPES['MSG_LN'],len(anchor_list))):
+            message+=anchor_list[i].id #TODO : a tester
+
+        self.client.sock.send(message(dest=self.client.id, ty=TYPES['RES_AL'], msg=message).str())
+
     def loop(self):
         global mobile_list
         global anchor_list
@@ -217,7 +236,7 @@ class thread_client(Thread):
             return
 
         try:
-            to_read, wlist, xlist = select.select([self.client.sock],[], [], thread_client.TIMEOUT)
+            select.select([self.client.sock],[], [], thread_client.TIMEOUT)
         except select.error:
             pass
         else :
@@ -244,6 +263,10 @@ class thread_client(Thread):
             else :
                 console_queue.put("Le message demande à être traité par le serveur")
 
+                if msg.ty == TYPES['ASK_ID'] :
+                    self.new_id()
+                elif msg.ty == TYPES['RES_AL']:
+                    self.send_anchor_list()
 
 main()
 

@@ -10,6 +10,7 @@ import random
 
 id = -1
 ty = -1
+pos = (-1,-1,-1)
 
 console_queue = Queue()
 
@@ -19,9 +20,10 @@ console_th = None # Thread qui gère la console
 
 def main():
      console_th = console()
+     socket_th = com()
 
      console_th.start()
-
+     socket_th.start()
 
 class console(Thread):
 
@@ -66,7 +68,7 @@ class com(Thread):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((host, port))
 
-    def set_id(self):
+    def ask_id(self):
         global TYPES
         i = 0
         while i < com.MAX_ATTEMPS :
@@ -82,6 +84,18 @@ class com(Thread):
                     return True
         return False
 
+    def set_id(self):
+        global TYPES
+        """
+            On considere pour l'instant que l'ancre ou le mobile ne
+            fait rien s'il n'as pas d'id
+        """
+        while True :
+            if not self.ask_id():
+                self.sock.send(message(dest=0,ty=TYPES['ASK_ID']).str())
+            else :
+                return
+
     def inform_type(self,dest):
         if ty == TYPES['TY_ANCH'] :
             self.sock.send(message(dest=dest,ty=TYPES['TY_ANCH']).str())
@@ -94,16 +108,21 @@ class com(Thread):
         dist = random.uniform(3, 7)
         self.sock.send(message(dest=dest,ty=TYPES['RES_DT'],message = str(dist)).str())
 
-    def run(self):
+    def send_pos(self,dest):
+        global pos
+        pos = str(pos(0))+"-"+str(pos(1))+"-"+str(pos(2))
+        self.sock.send(message(dest=dest,ty=TYPES['RES_PS'],message = str(pos)).str())
 
-        if not self.set_id():
-            console_queue.put("Id non reçu")
-            #TODO gerer le cas ou le server n'as pas envoyé l'id
-            #mettre une nouvelle commande dans le protocol : ASK_ID
-        else :
-            console_queue.put("L'id a été reçu : "+str(id))
+    def run(self):
+        global id
+        self.set_id()
+
+        console_queue.put("L'id a été reçu : "+str(id))
+
+        self.loop()
 
     def loop(self):
+         global TYPES
          msg = message(string=self.client.sock.recv(TYPES['BYTE_SZ']).decode())
 
          if msg.ty == TYPES['ASK_TY']:
@@ -112,6 +131,8 @@ class com(Thread):
          elif msg.ty == TYPES['ASK_DT']:
              self.send_dist(int(msg.msg))
 
+         elif msg.ty == TYPES['ASK_PS']:
+            self.send_pos(int(msg.msg))
 
 
 

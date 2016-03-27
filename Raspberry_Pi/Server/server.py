@@ -47,8 +47,6 @@ class console(Thread):
 
     def __init__(self):
         Thread.__init__(self)
-        self.stack = []
-        self.lock = False
         self.queue = console_queue
         self.terminated = False
 
@@ -61,14 +59,9 @@ class console(Thread):
             if self.terminated :
                 return
             self.queueService()
-            time.sleep(1)
-
             i, o, e = select.select( [sys.stdin], [], [], console.TIMEOUT )
-
             if i :
-
                 st = sys.stdin.readline().strip()
-
                 if st.lower() in ["exit","quit"]:
                     self.quit()
                 elif st.lower() in ["list_m"]:
@@ -181,7 +174,7 @@ class thread_client(Thread):
             except select.error:
                 pass
             else:
-                msg = message(string=self.client.sock.recv(TYPES['MSG_SZ']).decode())#MESSAGE
+                msg = message(string=self.client.sock.recv(TYPES['BYTE_SZ']).decode())#MESSAGE
                 if msg.ty == TYPES['CNF_ID']:
                     return True
             i+=1
@@ -198,7 +191,7 @@ class thread_client(Thread):
             except select.error:
                 pass
             else:
-                msg = message(string=self.client.sock.recv(TYPES['MSG_SZ']).decode())
+                msg = message(string=self.client.sock.recv(TYPES['BYTE_SZ']).decode())
                 ty = int(msg.msg)
                 if ty == TYPES['TY_ANCH'] :
                     console_queue.put("Le client "+str(self.client.id)+" est une ancre")
@@ -228,7 +221,7 @@ class thread_client(Thread):
         except select.error:
             pass
         else :
-            msg = message(string=self.client.sock.recv(TYPES['MSG_SZ']).decode())
+            msg = message(string=self.client.sock.recv(TYPES['BYTE_SZ']).decode())
 
             if msg.dest != 0 :
                 sent = False

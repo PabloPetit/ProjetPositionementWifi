@@ -19,6 +19,8 @@ TYPES['RES_DT'] = 7 # Renvoi l'evaluation de distance : MESS = int
 TYPES['ASK_PS'] = 8 # Demande sa position à une ancre : MESS = id
 TYPES['RES_PS'] = 9 # Renvoi sa position : MESS = int+int
 
+TYPES['ASK_ID'] = 10#Demande une nouvelle id
+
 #Dans le cas des demande, l'id envoyé est celle de l'envoyeur pour que
 #le receveur sache à qui envoyer la réponse
 
@@ -26,6 +28,8 @@ TYPES['RES_PS'] = 9 # Renvoi sa position : MESS = int+int
 TYPES['TY_ANCH'] = 0
 TYPES['TY_MOB'] = 1
 TYPES['TY_BOTH'] = 2
+
+TYPES['BYTE_SZ'] = 65 #65 apres encode (), 81 sans : pour 32 char
 
 
 """

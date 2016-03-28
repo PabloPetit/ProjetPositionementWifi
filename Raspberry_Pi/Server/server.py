@@ -28,7 +28,7 @@ def main():
     print("Lancement du serveur ...")
 
     console_th = console()
-    server_th = server(4012,5)
+    server_th = server(4014,5)
 
     console_th.start()
     server_th.start()
@@ -43,23 +43,35 @@ def main():
 class console(Thread):
 
     global TYPES
-    TIMEOUT = 5
+    TIMEOUT = 1
 
     def __init__(self):
         Thread.__init__(self)
         self.queue = console_queue
         self.terminated = False
+        self.prompt = True
 
     def queueService(self):
         while not self.queue.empty():
-            print(self.queue._get())
+            tmp = self.queue._get()
+            if tmp.lower() in ["quit","exit"]:
+                self.quit()
+                return
+            print(tmp)
+            self.prompt = True
 
     def run(self):
         while(True):
             if self.terminated :
                 return
             self.queueService()
-            i, o, e = select.select( [sys.stdin], [], [], console.TIMEOUT )
+            """
+            if self.prompt:
+                print('> ',end="")
+                self.prompt = False
+            """
+            i, o, e = select.select( [sys.stdin], [], [], console.TIMEOUT)
+
             if i :
                 st = sys.stdin.readline().strip()
                 if st.lower() in ["exit","quit"]:
@@ -81,7 +93,7 @@ class console(Thread):
         self.terminated = True
         print("La console a été coupée")
         if empty :
-            print("Vidage de la file :")
+            print("Vidage de la file console :")
             self.queueService()
 
 
@@ -100,10 +112,17 @@ class server(Thread):
         self.maxQueue = maxQueue
         self.console_queue = console_queue
         self.id_cnt = 1
+
     def run(self):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.bind(('',self.port))
-        self.sock.listen(self.maxQueue)
+        try:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.sock.bind(('',self.port))
+            self.sock.listen(self.maxQueue)
+        except socket.error:
+            console_queue.put("Connexion refusée.\nLe serveur n'as pas put être lancé.")
+            console_queue.put("quit")
+            return
+
         console_queue.put("Le server est en ligne. IP = "+str(self.sock.getsockname()[0])+" Port  = "+str(self.sock.getsockname()[1]))
 
         while(True):
@@ -145,18 +164,20 @@ class thread_client(Thread):
         elif self.client.ty == TYPES['TY_BOTH'] :
             anchor_list.remove(client)
             mobile_list.remove(client)
+
         self.terminated = True
+        console_queue.put("Connection terminée avec le client : "+str(self.client.id))
 
     def run(self):
         # 1 : on donne son id au client
         if not self.set_client_id() :
-            console_queue.put("Le client "+str(self.client.sock.getsockname())+" ne repond pas, déconnexion")
+            console_queue.put("Le client "+str(self.client.id)+" ne repond pas, déconnexion")
             self.close_connexion()
         else :
             console_queue.put("Le client "+str(self.client.id)+" à confirmé son id")
 
         if not self.ask_ty():
-            console_queue.put("Le client "+str(self.client.sock.getsockname())+" a repondu un code erroné, deconnexion")
+            console_queue.put("Le client "+str(self.client.id)+" a repondu un code erroné, deconnexion")
             self.close_connexion()
 
         console_queue.put("Lancement de la boucle de communication avec le client : "+str(self.client.id))
@@ -165,17 +186,25 @@ class thread_client(Thread):
     def set_client_id(self):
         i=0
         global TYPES
+
         console_queue.put("Envoi de l'id au client "+str(self.client.id))
         while(i<self.MAX_ATTEMPS): #On vas tenter plusieurs fois de communiquer avec le client, apres quoi on fermera la sock si pas de reponse
-            self.client.sock.send(message(dest=self.client.id, ty=TYPES['SET_ID'], msg=self.client.id).str()) # Envoi au nouveau client son id
             try:
+                console_queue.put("Envoi d'id numero "+str(i)+" vers le client "+str(self.client.id))
+                self.client.sock.send(message(dest=self.client.id, ty=TYPES['SET_ID'], msg=self.client.id).str()) # Envoi au nouveau client son id
                 select.select([self.client.sock],[], [], thread_client.TIMEOUT)
             except select.error:
                 pass
             else:
-                msg = message(string=self.client.sock.recv(TYPES['BYTE_SZ']).decode())#MESSAGE
-                if msg.ty == TYPES['CNF_ID']:
-                    return True
+                try:
+                    msg = message(string=self.client.sock.recv(TYPES['BYTE_SZ']).decode())#MESSAGE
+                    if msg.ty == TYPES['CNF_ID']:
+                        return True
+                except socket.error as e:
+                    console_queue.put("Probleme de connexion avec le client "+str(self.client.id))
+                    console_queue.put("Fermeture de la connexion ...")
+                    self.close_connexion()
+
             i+=1
         return False
 
@@ -194,28 +223,37 @@ class thread_client(Thread):
         global TYPES
         i=0
         while(i<thread_client.MAX_ATTEMPS):
-            self.client.sock.send(message(dest=self.client.id, ty=TYPES['ASK_TY'], msg=server_id).str()) # Demande son type au client
-            to_read = []
             try:
-                to_read, wlist, xlist = select.select([self.client.sock],[], [], thread_client.TIMEOUT)
+                self.client.sock.send(message(dest=self.client.id, ty=TYPES['ASK_TY'], msg=server_id).str()) # Demande son type au client
+                select.select([self.client.sock],[], [], thread_client.TIMEOUT)
             except select.error:
                 pass
+            except socket.error:
+                console_queue.put("Probleme de connexion avec le client "+str(self.client.id))
+                console_queue.put("Fermeture de la connexion ...")
+                self.close_connexion()
             else:
-                msg = message(string=self.client.sock.recv(TYPES['BYTE_SZ']).decode())
-                ty = int(msg.msg)
-                if ty == TYPES['TY_ANCH'] :
-                    console_queue.put("Le client "+str(self.client.id)+" est une ancre")
-                    anchor_list.append(self.client)
-                    return True;
-                elif ty == TYPES['TY_MOB'] :
-                    console_queue.put("Le client "+str(self.client.id)+" est un mobile")
-                    mobile_list.append(self.client)
-                    return True
-                elif ty == TYPES['TY_BOTH'] :
-                    console_queue.put("Le client "+str(self.client.id)+" est une ancre et un mobile")
-                    anchor_list.append(self.client)
-                    mobile_list.append(self.client)
-                    return True
+                try:
+                    msg = message(string=self.client.sock.recv(TYPES['BYTE_SZ']).decode())
+                except socket.error:
+                    console_queue.put("Probleme de connexion avec le client "+str(self.client.id))
+                    console_queue.put("Fermeture de la connexion ...")
+                    self.close_connexion()
+                else :
+                    ty = int(msg.msg)
+                    if ty == TYPES['TY_ANCH'] :
+                        console_queue.put("Le client "+str(self.client.id)+" est une ancre")
+                        anchor_list.append(self.client)
+                        return True;
+                    elif ty == TYPES['TY_MOB'] :
+                        console_queue.put("Le client "+str(self.client.id)+" est un mobile")
+                        mobile_list.append(self.client)
+                        return True
+                    elif ty == TYPES['TY_BOTH'] :
+                        console_queue.put("Le client "+str(self.client.id)+" est une ancre et un mobile")
+                        anchor_list.append(self.client)
+                        mobile_list.append(self.client)
+                        return True
             i+=1
         return False
 
@@ -226,7 +264,12 @@ class thread_client(Thread):
         for i in range(0,max(TYPES['MSG_LN'],len(anchor_list))):
             message+=anchor_list[i].id #TODO : a tester
 
-        self.client.sock.send(message(dest=self.client.id, ty=TYPES['RES_AL'], msg=message).str())
+        try:
+            self.client.sock.send(message(dest=self.client.id, ty=TYPES['RES_AL'], msg=message).str())
+        except socket.error:
+                    console_queue.put("Probleme de connexion avec le client "+str(self.client.id))
+                    console_queue.put("Fermeture de la connexion ...")
+                    self.close_connexion()
 
     def loop(self):
         global mobile_list
@@ -240,34 +283,39 @@ class thread_client(Thread):
         except select.error:
             pass
         else :
-            msg = message(string=self.client.sock.recv(TYPES['BYTE_SZ']).decode())
+            try:
+                msg = message(string=self.client.sock.recv(TYPES['BYTE_SZ']).decode())
 
-            if msg.dest != 0 :
-                sent = False
-                for mob in mobile_list :
-                    if mob.id == msg.dest :
-                        mob.sock.send(msg.str())
-                        sent = True
-                        break
-
-                if not sent :
-                    for mob in anchor_list :
+                if msg.dest != 0 :
+                    sent = False
+                    for mob in mobile_list :
                         if mob.id == msg.dest :
                             mob.sock.send(msg.str())
                             sent = True
                             break
 
-                if sent :
-                    console_queue.put("Message du client "+str(self.client.id)+"à été retransmit vers le client "+str(msg.dest))
+                    if not sent :
+                        for mob in anchor_list :
+                            if mob.id == msg.dest :
+                                mob.sock.send(msg.str())
+                                sent = True
+                                break
 
-            else :
-                console_queue.put("Le message demande à être traité par le serveur")
+                    if sent :
+                        console_queue.put("Message du client "+str(self.client.id)+" à été retransmit vers le client "+str(msg.dest))
 
-                if msg.ty == TYPES['ASK_ID'] :
-                    self.new_id()
-                elif msg.ty == TYPES['RES_AL']:
-                    self.send_anchor_list()
+                else :
+                    console_queue.put("Le message demande à être traité par le serveur")
 
+                    if msg.ty == TYPES['ASK_ID'] :
+                        self.new_id()
+                    elif msg.ty == TYPES['RES_AL']:
+                        self.send_anchor_list()
+
+            except socket.error:
+                    console_queue.put("Probleme de connexion avec le client "+str(self.client.id))
+                    console_queue.put("Fermeture de la connexion ...")
+                    self.close_connexion()
 main()
 
 

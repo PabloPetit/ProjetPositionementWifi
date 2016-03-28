@@ -29,7 +29,7 @@ TYPES['TY_ANCH'] = 0
 TYPES['TY_MOB'] = 1
 TYPES['TY_BOTH'] = 2
 
-TYPES['BYTE_SZ'] = 65 #65 apres encode (), 81 sans : pour 32 char
+TYPES['BYTE_SZ'] = 128 #taille du message : 65 apres encode (), 81 sans : pour 32 char
 
 
 """
@@ -54,16 +54,28 @@ class message:
         self.dest = "DEST"
         self.ty = "TYPE"
         self.msg = "MESS"
-        if dest :
-            self.dest = int(dest)
-        if ty :
-            self.ty = int(ty)
-        if msg :
-            self.msg = msg
+        if dest or dest == 0:
+            try:
+                self.dest = int(dest)
+            except ValueError:
+                pass
+        if ty or ty == 0:
+            try:
+                self.ty = int(ty)
+            except ValueError:
+                pass
+        if msg or msg == 0:
+            try:
+                self.msg = msg
+            except ValueError:
+                pass
         if string :
-            self.dest = int(string[0])
-            self.ty = int(string[1])
-            self.msg = string[2:TYPES['MSG_SZ']]
+            try:
+                self.dest = int(string[0])
+                self.ty = int(string[1])
+                self.msg = string[2:TYPES['MSG_SZ']]
+            except ValueError:
+                pass
 
     def str(self):
         tmp = (str(self.dest)+str(self.ty)+str(self.msg))

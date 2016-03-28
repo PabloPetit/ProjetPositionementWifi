@@ -56,7 +56,7 @@ class message:
         self.msg = "MESS"
         if dest :
             self.dest = int(dest)
-        if ty :
+        if not ty is None:
             self.ty = int(ty)
         if msg :
             self.msg = msg

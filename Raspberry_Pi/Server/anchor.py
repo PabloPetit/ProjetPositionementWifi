@@ -20,7 +20,7 @@ console_th = None # Thread qui gère la console
 
 def main():
      console_th = console()
-     socket_th = com("localhost",4013)
+     socket_th = com("localhost",4010)
 
      console_th.start()
      socket_th.start()

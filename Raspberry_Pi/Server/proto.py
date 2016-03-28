@@ -54,7 +54,7 @@ class message:
         self.dest = "DEST"
         self.ty = "TYPE"
         self.msg = "MESS"
-<<<<<<< HEAD
+
         if dest or dest == 0:
             try:
                 self.dest = int(dest)
@@ -70,14 +70,6 @@ class message:
                 self.msg = msg
             except ValueError:
                 pass
-=======
-        if dest :
-            self.dest = int(dest)
-        if not ty is None:
-            self.ty = int(ty)
-        if msg :
-            self.msg = msg
->>>>>>> origin/master
         if string :
             try:
                 self.dest = int(string[0])

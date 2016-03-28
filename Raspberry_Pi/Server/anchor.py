@@ -20,7 +20,7 @@ console_th = None # Thread qui gère la console
 
 def main():
      console_th = console()
-     socket_th = com("localhost",4012)
+     socket_th = com("localhost",4013)
 
      console_th.start()
      socket_th.start()
@@ -65,6 +65,7 @@ class com(Thread):
     TIMEOUT = 5 #Temps d'attente d'une reponse
 
     def __init__(self,host,port):
+        Thread.__init__(self)
         self.host = host
         self.port = port
         self.sock = None
@@ -74,7 +75,7 @@ class com(Thread):
         i = 0
         while i < com.MAX_ATTEMPS :
             try:
-                select.select([self.client.sock],[], [], com.TIMEOUT)
+                select.select([self.sock],[], [], com.TIMEOUT)
             except select.error:
                 pass
             else:

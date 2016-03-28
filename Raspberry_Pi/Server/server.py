@@ -28,7 +28,7 @@ def main():
     print("Lancement du serveur ...")
 
     console_th = console()
-    server_th = server(4012,5)
+    server_th = server(4013,5)
 
     console_th.start()
     server_th.start()

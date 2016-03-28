@@ -2,12 +2,16 @@
 #define __MESSAGE_H__
 
 #include "ESP8266.h"
+#include "Anchor.h"
 
 #define Server ESP8266
 
 
 #define MSG_SZ 32
 #define MSG_LN 30
+
+#define BYTE_SZ 65 //65 apres encode (), 81 sans : pour 32 char
+
 
 //RECEPTION
 #define SET_ID 0 // Donne son id à un noeud : MESS = id
@@ -24,7 +28,14 @@
 #define ASK_PS 8 // Demande sa position à une ancre : MESS = id
 
 // ENVOI
-// renvoi l'id du client
+
+
+/**
+ * Récupère l'id que le serveur nous a attribué
+ *
+ * @param esp - module wifi esp8266 pour la communication
+ * @return l'id reçu
+ */
 int getId(Server esp);
 
 int get_Node_Type(Server esp, Anchor anchor);
@@ -33,7 +44,7 @@ int get_Node_Type(Server esp, Anchor anchor);
 
 // RECEPTION
 //envoi un message au server
-bool confirm_Id(Server esp, Client client);
+bool confirm_Id(Server esp);
 
 
 

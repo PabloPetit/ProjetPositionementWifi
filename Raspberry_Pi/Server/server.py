@@ -29,7 +29,7 @@ def main():
 
     console_th = console()
 
-    server_th = server(4014,5)
+    server_th = server(4015,5)
 
     console_th.start()
     server_th.start()
@@ -180,7 +180,7 @@ class thread_client(Thread):
             console_queue.put("Le client "+str(self.client.id)+" à confirmé son id")
 
         if not self.ask_ty():
-            console_queue.put("Le client "+str(self.client.id)+" a repondu un code erroné, deconnexion")
+            console_queue.put("Le client "+str(self.client.id)+" n'as pas confirmé son type, déconnexion")
             self.close_connexion()
 
         console_queue.put("Lancement de la boucle de communication avec le client : "+str(self.client.id))
@@ -200,9 +200,13 @@ class thread_client(Thread):
                 pass
             else:
                 try:
+                    console_queue.put("En attente de confirmation id - client "+str(self.client.id)+" ...")
                     msg = message(string=self.client.sock.recv(TYPES['BYTE_SZ']).decode())#MESSAGE
                     if msg.ty == TYPES['CNF_ID']:
                         return True
+                    else:
+                        console_queue.put("Message incorrect reçu - client"+str(self.client.id))
+                        console_queue.put(msg.toString())
                 except socket.error as e:
                     console_queue.put("Probleme de connexion avec le client "+str(self.client.id))
                     console_queue.put("Fermeture de la connexion ...")
@@ -225,38 +229,33 @@ class thread_client(Thread):
     def ask_ty(self):
         global TYPES
         i=0
+        console_queue.put("Demande de type envoyé au client "+str(self.client.id))
         while(i<thread_client.MAX_ATTEMPS):
+            console_queue.put("Envoi demande de confirmation type numero "+str(i)+" vers le client "+str(self.client.id))
             try:
                 self.client.sock.send(message(dest=self.client.id, ty=TYPES['ASK_TY'], msg=server_id).str()) # Demande son type au client
+                console_queue.put("En attente de réponse - client "+str(self.client.id)+" ...")
                 select.select([self.client.sock],[], [], thread_client.TIMEOUT)
-            except select.error:
-                pass
+                msg = message(string=self.client.sock.recv(TYPES['BYTE_SZ']).decode())
             except socket.error:
                 console_queue.put("Probleme de connexion avec le client "+str(self.client.id))
                 console_queue.put("Fermeture de la connexion ...")
                 self.close_connexion()
-            else:
-                try:
-                    msg = message(string=self.client.sock.recv(TYPES['BYTE_SZ']).decode())
-                except socket.error:
-                    console_queue.put("Probleme de connexion avec le client "+str(self.client.id))
-                    console_queue.put("Fermeture de la connexion ...")
-                    self.close_connexion()
-                else :
-                    ty = int(msg.msg)
-                    if ty == TYPES['TY_ANCH'] :
-                        console_queue.put("Le client "+str(self.client.id)+" est une ancre")
-                        anchor_list.append(self.client)
-                        return True;
-                    elif ty == TYPES['TY_MOB'] :
-                        console_queue.put("Le client "+str(self.client.id)+" est un mobile")
-                        mobile_list.append(self.client)
-                        return True
-                    elif ty == TYPES['TY_BOTH'] :
-                        console_queue.put("Le client "+str(self.client.id)+" est une ancre et un mobile")
-                        anchor_list.append(self.client)
-                        mobile_list.append(self.client)
-                        return True
+            else :
+                ty = int(msg.msg)
+                if ty == TYPES['TY_ANCH'] :
+                    console_queue.put("Le client "+str(self.client.id)+" est une ancre")
+                    anchor_list.append(self.client)
+                    return True;
+                elif ty == TYPES['TY_MOB'] :
+                    console_queue.put("Le client "+str(self.client.id)+" est un mobile")
+                    mobile_list.append(self.client)
+                    return True
+                elif ty == TYPES['TY_BOTH'] :
+                    console_queue.put("Le client "+str(self.client.id)+" est une ancre et un mobile")
+                    anchor_list.append(self.client)
+                    mobile_list.append(self.client)
+                    return True
             i+=1
         return False
 
@@ -277,7 +276,9 @@ class thread_client(Thread):
     def loop(self):
         global mobile_list
         global anchor_list
+        global TYPES
         #Boucle de communication
+
         if self.terminated :
             return
 
@@ -311,14 +312,22 @@ class thread_client(Thread):
                     console_queue.put("Le message demande à être traité par le serveur")
 
                     if msg.ty == TYPES['ASK_ID'] :
+                        console_queue.put("Demande d'id reçu du client "+self.client.id)
                         self.new_id()
                     elif msg.ty == TYPES['RES_AL']:
+                        console_queue.put("Demande de liste des ancres reçu du client "+self.client.id)
                         self.send_anchor_list()
+                    else:
+                        console_queue.put("Demande incomprise du client "+self.client.id)
+                        console_queue.put(msg.toString())
 
             except socket.error:
                     console_queue.put("Probleme de connexion avec le client "+str(self.client.id))
                     console_queue.put("Fermeture de la connexion ...")
                     self.close_connexion()
+
+
+
 main()
 
 

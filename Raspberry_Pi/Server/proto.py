@@ -83,5 +83,5 @@ class message:
         return (tmp+('#'*(TYPES['MSG_SZ']-len(tmp)))).encode()
 
     def toString(self):
-        return "Message : \nDEST : "+str(self.dest)+" TYPE : "+str(self.ty)+" MESS : "+str(self.msg)
+        return "     -----\nMessage : \nDEST : "+str(self.dest)+" TYPE : "+str(self.ty)+" MESS : "+str(self.msg)+"     -----\n"
 

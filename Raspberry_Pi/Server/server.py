@@ -29,7 +29,7 @@ def main():
 
     console_th = console()
 
-    server_th = server(4003,5)
+    server_th = server(4004,5)
 
     console_th.start()
     server_th.start()
@@ -243,7 +243,7 @@ class thread_client(Thread):
                 console_queue.put("Fermeture de la connexion ...")
                 self.close_connexion()
             except ValueError:
-                console_queue("Message incorrect")
+                console_queue.put("Message incorrect")
                 pass
             else :
 
@@ -276,6 +276,7 @@ class thread_client(Thread):
                     console_queue.put("Probleme de connexion avec le client "+str(self.client.id))
                     console_queue.put("Fermeture de la connexion ...")
                     self.close_connexion()
+
 
     def loop(self):
         global mobile_list

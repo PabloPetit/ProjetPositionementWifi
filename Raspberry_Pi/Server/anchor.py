@@ -20,7 +20,7 @@ console_th = None # Thread qui gère la console
 
 def main():
      console_th = console()
-     socket_th = com("localhost",4014)
+     socket_th = com("localhost",4003)
 
 
      console_th.start()
@@ -85,10 +85,13 @@ class com(Thread):
                 pass
             else:
                 msg = message(string=self.sock.recv(TYPES['BYTE_SZ']))
+
                 if msg.ty == TYPES['SET_ID'] :
                     id = int(msg.msg)
                     self.sock.send(message(dest=0,ty=TYPES['CNF_ID']).str())
                     return True
+                else :
+                    console_queue.put("Message reçu non conforme")
             i+=1
         return False
 

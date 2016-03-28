@@ -28,7 +28,11 @@ def main():
     print("Lancement du serveur ...")
 
     console_th = console()
+<<<<<<< HEAD
     server_th = server(4014,5)
+=======
+    server_th = server(4015,5)
+>>>>>>> origin/master
 
     console_th.start()
     server_th.start()
@@ -114,6 +118,7 @@ class server(Thread):
         self.id_cnt = 1
 
     def run(self):
+<<<<<<< HEAD
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.bind(('',self.port))
@@ -123,6 +128,11 @@ class server(Thread):
             console_queue.put("quit")
             return
 
+=======
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.bind(("192.168.0.10",self.port))
+        self.sock.listen(self.maxQueue)
+>>>>>>> origin/master
         console_queue.put("Le server est en ligne. IP = "+str(self.sock.getsockname()[0])+" Port  = "+str(self.sock.getsockname()[1]))
 
         while(True):

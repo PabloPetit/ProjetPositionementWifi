@@ -29,6 +29,7 @@
 
 #define TIMEOUT 10000
 #define ESPSerial Serial1
+#define DEBUG Serial
 
 
 /**

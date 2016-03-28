@@ -24,5 +24,5 @@ class Anchor {
         int y;
         float last_Range;
 
-
+};
 #endif

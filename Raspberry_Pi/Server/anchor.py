@@ -20,7 +20,11 @@ console_th = None # Thread qui gère la console
 
 def main():
      console_th = console()
+<<<<<<< HEAD
      socket_th = com("localhost",4014)
+=======
+     socket_th = com("localhost",4010)
+>>>>>>> origin/master
 
      console_th.start()
      socket_th.start()
@@ -78,7 +82,10 @@ class com(Thread):
         i = 0
         while i < com.MAX_ATTEMPS :
             try:
+<<<<<<< HEAD
                 console_queue.put("En attente de récéption de l'id ["+str(i+1)+"]")
+=======
+>>>>>>> origin/master
                 select.select([self.sock],[], [], com.TIMEOUT)
             except select.error:
                 pass

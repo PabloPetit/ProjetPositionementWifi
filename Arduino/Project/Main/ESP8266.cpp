@@ -586,6 +586,7 @@ bool ESP8266::sATCIPSTARTSingle(String type, String addr, uint32_t port)
     ESPSerial.println(port);
 
     data = recvString("OK", "ERROR", "ALREADY CONNECT", 10000);
+    DEBUG.println(data);
     if (data.indexOf("OK") != -1 || data.indexOf("ALREADY CONNECT") != -1) {
         return true;
     }

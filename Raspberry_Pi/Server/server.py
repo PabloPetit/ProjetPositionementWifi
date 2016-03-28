@@ -312,13 +312,13 @@ class thread_client(Thread):
                     console_queue.put("Le message demande à être traité par le serveur")
 
                     if msg.ty == TYPES['ASK_ID'] :
-                        console_queue.put("Demande d'id reçu du client "+self.client.id)
+                        console_queue.put("Demande d'id reçu du client "+str(self.client.id))
                         self.new_id()
                     elif msg.ty == TYPES['RES_AL']:
-                        console_queue.put("Demande de liste des ancres reçu du client "+self.client.id)
+                        console_queue.put("Demande de liste des ancres reçu du client "+str(self.client.id))
                         self.send_anchor_list()
                     else:
-                        console_queue.put("Demande incomprise du client "+self.client.id)
+                        console_queue.put("Demande incomprise du client "+str(self.client.id))
                         console_queue.put(msg.toString())
 
             except socket.error:

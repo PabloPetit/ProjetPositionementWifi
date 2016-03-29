@@ -20,7 +20,7 @@ console_th = None # Thread qui gère la console
 
 def main():
      console_th = console()
-     socket_th = com("localhost",4003)
+     socket_th = com("192.168.0.10",4007)
 
 
      console_th.start()
@@ -76,6 +76,7 @@ class com(Thread):
 
     def ask_id(self):
         global TYPES
+        global id
         i = 0
         while i < com.MAX_ATTEMPS :
             try:
@@ -84,7 +85,7 @@ class com(Thread):
             except select.error:
                 pass
             else:
-                msg = message(string=self.sock.recv(TYPES['BYTE_SZ']))
+                msg = message(string=self.sock.recv(TYPES['BYTE_SZ']).decode())
 
                 if msg.ty == TYPES['SET_ID'] :
                     id = int(msg.msg)
@@ -153,7 +154,7 @@ class com(Thread):
          global TYPES
 
          while True :
-             msg = message(string=self.client.sock.recv(TYPES['BYTE_SZ']).decode())
+             msg = message(string=self.sock.recv(TYPES['BYTE_SZ']).decode())
              if msg.ty == TYPES['ASK_TY']:
                  self.inform_type(msg.dest)
 

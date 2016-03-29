@@ -29,7 +29,7 @@ def main():
 
     console_th = console()
 
-    server_th = server(4004,5)
+    server_th = server(4007,5)
 
     console_th.start()
     server_th.start()
@@ -118,7 +118,7 @@ class server(Thread):
 
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.bind(('',self.port))
+            self.sock.bind(('192.168.0.10',self.port))
             self.sock.listen(self.maxQueue)
         except socket.error:
             console_queue.put("Connexion refusée.\nLe serveur n'as pas put être lancé.")

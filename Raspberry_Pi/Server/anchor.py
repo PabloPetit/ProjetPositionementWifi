@@ -9,8 +9,8 @@ import random
 
 
 id = -1
-ty = -1
-pos = (-1,-1,-1)
+ty = 0
+pos = (random.randint(50, 100),random.randint(50, 100),random.randint(50, 100))
 
 console_queue = Queue()
 
@@ -21,7 +21,7 @@ console_th = None # Thread qui gère la console
 
 def main():
      console_th = console()
-     socket_th = com("192.168.0.10",4007)
+     socket_th = com("192.168.0.10",4004)
 
      console_th.start()
      socket_th.start()
@@ -122,11 +122,11 @@ class com(Thread):
 
     def inform_type(self,dest):
         if ty == TYPES['TY_ANCH'] :
-            self.sock.send(message(dest=dest,ty=TYPES['TY_ANCH']).str())
+            self.sock.send(message(dest=dest,ty=TYPES['RES_TY'], msg=TYPES['TY_ANCH']).str())
         elif ty == TYPES['TY_MOB'] :
-            self.sock.send(message(dest=dest,ty=TYPES['TY_MOB']).str())
+            self.sock.send(message(dest=dest,ty=TYPES['RES_TY'], msg=TYPES['TY_MOB']).str())
         elif ty == TYPES['TY_BOTH'] :
-            self.sock.send(message(dest=dest,ty=TYPES['TY_BOTH']).str())
+            self.sock.send(message(dest=dest,ty=TYPES['RES_TY'], msg=TYPES['TY_BOTH']).str())
 
     def send_dist(self,dest):
         dist = random.uniform(3, 7)

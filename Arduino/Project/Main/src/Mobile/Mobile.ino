@@ -8,7 +8,7 @@
 #define PASSWORD    "1234567890"
 #define SERVER_ADDR "192.168.0.10"
 #define PORT        4004
-#define NODE_TYPE 1 // 1 = Mobile, 0 = Ancre
+#define NODE_TYPE 1
 
 
 #define FAILURE "FAILURE"
@@ -20,6 +20,9 @@ int Self_ID;
 
 bool isHost = false;
 ESP8266 esp;
+
+Vector<Anchor> anchor_List;
+
 void setup(void){
     // Init WIFI
     Serial.begin(9600);
@@ -27,6 +30,28 @@ void setup(void){
     esp = ESP8266();
 
     bool init = init_Client();
+
+    ;
+    Serial.print("send_ask_Anchor_List : ");
+    if(send_ask_Anchor_List(esp)){
+        Serial.println(SUCCESS);
+    }
+    anchor_List = recv_Anchor_List(esp);
+
+    for (size_t i = 0; i < anchor_List.size(); i++) {
+        Serial.print("Anchor ");
+        Serial.print(i);
+        Serial.print(" id :");
+        Serial.println(anchor_List[i].getId());
+
+        send_ask_Position(esp, anchor_List[i], Self_ID);
+        recv_Anchor_Position(esp, anchor_List[i]);
+
+
+    }
+
+
+
 
 
     /**

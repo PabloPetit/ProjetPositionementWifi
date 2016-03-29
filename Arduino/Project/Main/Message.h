@@ -36,17 +36,24 @@
  * @param esp - module wifi esp8266 pour la communication
  * @return l'id reçu
  */
-int getId(Server esp);
+int recv_Id(Server esp);
 
-int get_Node_Type(Server esp, Anchor anchor);
 
+
+bool recv_Ask_Node_Type(Server esp);
 
 
 // RECEPTION
-//envoi un message au server
-bool confirm_Id(Server esp);
+/**
+ * Envoi au serveur une confirmation que l'on a bien reçu notre ID
+ *
+ * @param esp - module wifi esp8266 pour la communication
+ * @retval true - success.
+ * @retval false - failure.
+ */
+bool send_Confirm_Id(Server esp);
 
-
+bool send_Type_Node(Server esp, int node_type);
 
 
 

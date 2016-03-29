@@ -29,7 +29,7 @@ def main():
 
     console_th = console()
 
-    server_th = server(4004,5)
+    server_th = server(4005,5)
 
     console_th.start()
     server_th.start()

@@ -17,10 +17,11 @@ console_queue = Queue()
 socket_th = None # Thread qui gère les communications
 console_th = None # Thread qui gère la console
 
+#TODO : try catch autour des send et recv
 
 def main():
      console_th = console()
-     socket_th = com("localhost",4003)
+     socket_th = com("localhost",4004)
 
 
      console_th.start()
@@ -84,14 +85,14 @@ class com(Thread):
             except select.error:
                 pass
             else:
-                msg = message(string=self.sock.recv(TYPES['BYTE_SZ']))
+                msg = message(string=self.sock.recv(TYPES['BYTE_SZ']).decode())
 
                 if msg.ty == TYPES['SET_ID'] :
                     id = int(msg.msg)
                     self.sock.send(message(dest=0,ty=TYPES['CNF_ID']).str())
                     return True
                 else :
-                    console_queue.put("Message reçu non conforme")
+                    console_queue.put("Message reçu non conforme : \n"+msg.toString())
             i+=1
         return False
 
@@ -109,7 +110,12 @@ class com(Thread):
             if not self.ask_id():
                 console_queue.put("La récuperation de l'id a échoué.")
                 console_queue.put("Envoi d'une nouvelle demande")
-                self.sock.send(message(dest=0,ty=TYPES['ASK_ID']).str())
+                try :
+                    self.sock.send(message(dest=0,ty=TYPES['ASK_ID']).str())
+                except socket.error:
+                    console_queue.put("Envoi impossible")
+                    #TODO: faire un truc
+                    pass
             else :
                 console_queue.put("L'id a bien été récupéré : ID = "+str(id))
                 return

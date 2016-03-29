@@ -9,19 +9,19 @@ import random
 
 
 id = -1
-ty = -1
-pos = (-1,-1,-1)
+ty = 0
+pos = (random.randint(50, 100),random.randint(50, 100),random.randint(50, 100))
 
 console_queue = Queue()
 
 socket_th = None # Thread qui gère les communications
 console_th = None # Thread qui gère la console
 
+#TODO : try catch autour des send et recv
 
 def main():
      console_th = console()
-     socket_th = com("localhost",4003)
-
+     socket_th = com("192.168.0.10",4004)
 
      console_th.start()
      socket_th.start()
@@ -76,6 +76,7 @@ class com(Thread):
 
     def ask_id(self):
         global TYPES
+        global id
         i = 0
         while i < com.MAX_ATTEMPS :
             try:
@@ -84,14 +85,14 @@ class com(Thread):
             except select.error:
                 pass
             else:
-                msg = message(string=self.sock.recv(TYPES['BYTE_SZ']))
+                msg = message(string=self.sock.recv(TYPES['BYTE_SZ']).decode())
 
                 if msg.ty == TYPES['SET_ID'] :
                     id = int(msg.msg)
                     self.sock.send(message(dest=0,ty=TYPES['CNF_ID']).str())
                     return True
                 else :
-                    console_queue.put("Message reçu non conforme")
+                    console_queue.put("Message reçu non conforme : \n"+msg.toString())
             i+=1
         return False
 
@@ -109,18 +110,23 @@ class com(Thread):
             if not self.ask_id():
                 console_queue.put("La récuperation de l'id a échoué.")
                 console_queue.put("Envoi d'une nouvelle demande")
-                self.sock.send(message(dest=0,ty=TYPES['ASK_ID']).str())
+                try :
+                    self.sock.send(message(dest=0,ty=TYPES['ASK_ID']).str())
+                except socket.error:
+                    console_queue.put("Envoi impossible")
+                    #TODO: faire un truc
+                    pass
             else :
                 console_queue.put("L'id a bien été récupéré : ID = "+str(id))
                 return
 
     def inform_type(self,dest):
         if ty == TYPES['TY_ANCH'] :
-            self.sock.send(message(dest=dest,ty=TYPES['TY_ANCH']).str())
+            self.sock.send(message(dest=dest,ty=TYPES['RES_TY'], msg=TYPES['TY_ANCH']).str())
         elif ty == TYPES['TY_MOB'] :
-            self.sock.send(message(dest=dest,ty=TYPES['TY_MOB']).str())
+            self.sock.send(message(dest=dest,ty=TYPES['RES_TY'], msg=TYPES['TY_MOB']).str())
         elif ty == TYPES['TY_BOTH'] :
-            self.sock.send(message(dest=dest,ty=TYPES['TY_BOTH']).str())
+            self.sock.send(message(dest=dest,ty=TYPES['RES_TY'], msg=TYPES['TY_BOTH']).str())
 
     def send_dist(self,dest):
         dist = random.uniform(3, 7)
@@ -153,7 +159,7 @@ class com(Thread):
          global TYPES
 
          while True :
-             msg = message(string=self.client.sock.recv(TYPES['BYTE_SZ']).decode())
+             msg = message(string=self.sock.recv(TYPES['BYTE_SZ']).decode())
              if msg.ty == TYPES['ASK_TY']:
                  self.inform_type(msg.dest)
 

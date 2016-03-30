@@ -327,7 +327,7 @@ class thread_client(Thread):
                         else:
                             console_queue.put("Le message du client "+str(self.client.id)+" n'as pas trouvé de destinataire\n"+msg.toString())
                             try:
-                                self.client.sock.send(message(dest=self.client.id, ty=TYPES['UNK_ID']).str())
+                                self.client.sock.send(message(dest=self.client.id, ty=TYPES['UNK_ID'],msg=msg.dest).str())
                             except socket.error:
                                 self.close_connexion()
 

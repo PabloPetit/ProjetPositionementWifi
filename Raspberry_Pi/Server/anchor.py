@@ -9,7 +9,7 @@ import random
 
 
 id = -1
-ty = 0
+ty = 1
 pos = (random.randint(50, 100),random.randint(50, 100),random.randint(50, 100))
 
 console_queue = Queue()
@@ -21,7 +21,7 @@ console_th = None # Thread qui gère la console
 
 def main():
      console_th = console()
-     socket_th = com("192.168.0.10",4004)
+     socket_th = com("localhost",4002)
 
      console_th.start()
      socket_th.start()
@@ -41,6 +41,7 @@ class console(Thread):
             tmp = self.queue._get()
             if tmp.lower() in ["quit","exit"]:
                 self.quit()
+                return
             print(tmp)
 
     def run(self):
@@ -73,6 +74,7 @@ class com(Thread):
         self.host = host
         self.port = port
         self.sock = None
+        self.terminated = False
 
     def ask_id(self):
         global TYPES
@@ -85,10 +87,10 @@ class com(Thread):
             except select.error:
                 pass
             else:
-                msg = message(string=self.sock.recv(TYPES['BYTE_SZ']).decode())
+                msg = message(bytes=self.sock.recv(TYPES['BYTE_SZ']))
 
                 if msg.ty == TYPES['SET_ID'] :
-                    id = int(msg.msg)
+                    id = int(msg.msg[0])
                     self.sock.send(message(dest=0,ty=TYPES['CNF_ID']).str())
                     return True
                 else :
@@ -142,14 +144,20 @@ class com(Thread):
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.connect((self.host, self.port))
+            #self.sock.setblocking(1)
         except socket.error:
-            console_queue.put("Co")
+            console_queue.put("Connexion impossible")
+            console_queue.put("quit")
+            self.terminated = True
+            return False
         console_queue.put("Connexion réussie")
+        return True
 
     def run(self):
         global id
 
-        self.connexion()
+        if not self.connexion() :
+            return
 
         self.set_id()
 
@@ -159,16 +167,38 @@ class com(Thread):
          global TYPES
 
          while True :
-             msg = message(string=self.sock.recv(TYPES['BYTE_SZ']).decode())
+             if self.terminated :
+                 return
+
+             #msg = message(bytes=self.sock.recv(TYPES['BYTE_SZ']))
+             bytes = bytearray()
+
+             #size = self.sock.recv_into(bytes)
+             msg = message(bytes=self.sock.recv(TYPES['BYTE_SZ']))
+             console_queue.put("Un message a été reçu : ")
+
+             #console_queue.put(str(msg.bytes))
+
+             #if size == TYPES['BYTE_SZ'] :
+             #msg = message(bytes=bytes)
+
              if msg.ty == TYPES['ASK_TY']:
-                 self.inform_type(msg.dest)
+                console_queue.put("Demande de type reçu du client "+str(int(msg.msg[0])))
+                self.inform_type(int(msg.msg[0]))
 
              elif msg.ty == TYPES['ASK_DT']:
-                 self.send_dist(int(msg.msg))
+                console_queue.put("Demande d'évaluation de distance reçu du client "+str(int(msg.msg[0])))
+                self.send_dist(int(msg.msg[0]))
 
              elif msg.ty == TYPES['ASK_PS']:
-                self.send_pos(int(msg.msg))
+                console_queue.put("Demande de position reçu du client "+str(int(msg.msg[0])))
+                self.send_pos(int(msg.msg[0]))
 
+             elif msg.ty == TYPES['CNF_TY']:
+                 console_queue.put("Le serveur confirme qu'il as bien reçu le type")
 
+             else :
+                console_queue.put("Message incompris : "+msg.toString())
+             time.sleep(1)
 
 main()

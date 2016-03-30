@@ -326,6 +326,10 @@ class thread_client(Thread):
                             console_queue.put("Message du client "+str(self.client.id)+" à été retransmit vers le client "+str(msg.dest))
                         else:
                             console_queue.put("Le message du client "+str(self.client.id)+" n'as pas trouvé de destinataire\n"+msg.toString())
+                            try:
+                                self.client.sock.send(message(dest=self.client.id, ty=TYPES['UNK_ID']).str())
+                            except socket.error:
+                                self.close_connexion()
 
 
                     else :

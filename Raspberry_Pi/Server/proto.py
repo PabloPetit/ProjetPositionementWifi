@@ -18,8 +18,8 @@ TYPES['ASK_DT'] = 8 # Demande une evaluation de distance : MESS = id
 TYPES['RES_DT'] = 9 # Renvoi l'evaluation de distance : MESS = int
 TYPES['ASK_PS'] = 10 # Demande sa position à une ancre : MESS = id
 TYPES['RES_PS'] = 11 # Renvoi sa position : MESS = int+int
-
-TYPES['ASK_ID'] = 12#Demande une nouvelle id
+TYPES['ASK_ID'] = 12 # Redemande son id
+TYPES['UNK_ID'] = 13 #Id inconnue, message non redirigé #TODO : todo
 
 #Dans le cas des demande, l'id envoyé est celle de l'envoyeur pour que
 #le receveur sache à qui envoyer la réponse

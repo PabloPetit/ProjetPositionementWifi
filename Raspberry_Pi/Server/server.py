@@ -1,5 +1,4 @@
 import socket
-import time
 import select
 from queue import Queue
 from threading import *
@@ -7,7 +6,7 @@ from proto import *
 import sys
 
 
-server_id = 1 #Le server à toujours pour id 0
+server_id = 1 #Le server à toujours pour id 1
 anchor_list = [] #Liste des ancres connectées
 mobile_list = [] #Liste des mobiles connecté
 client_list = [] #Liste des thread client
@@ -311,14 +310,14 @@ class thread_client(Thread):
                     if msg.dest != 0 :
                         sent = False
                         for mob in mobile_list :
-                            if mob.id == msg.dest :
+                            if mob.id == msg.dest : #TODO Faux : il faut mettre un truc genre int(msg.msg[0])
                                 mob.sock.send(msg.str())
                                 sent = True
                                 break
 
                         if not sent :
                             for mob in anchor_list :
-                                if mob.id == msg.dest :
+                                if mob.id == msg.dest : #TODO : La même
                                     mob.sock.send(msg.str())
                                     sent = True
                                     break

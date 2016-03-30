@@ -10,13 +10,12 @@ import random
 
 id = -1
 ty = 1
-pos = (random.randint(50, 100),random.randint(50, 100),random.randint(50, 100))
+pos = (random.randfloat(50, 100),random.randfloat(50, 100),random.randfloat(50, 100))
 
 console_queue = Queue()
 
 socket_th = None # Thread qui gère les communications
 console_th = None # Thread qui gère la console
-
 #TODO : try catch autour des send et recv
 
 def main():
@@ -132,11 +131,12 @@ class com(Thread):
 
     def send_dist(self,dest):
         dist = random.uniform(3, 7)
-        self.sock.send(message(dest=dest,ty=TYPES['RES_DT'],message = str(dist)).str())
+
+        self.sock.send(message(dest=dest,ty=TYPES['RES_DT'],message = dist).str())
 
     def send_pos(self,dest):
         global pos
-        pos = str(pos(0))+"-"+str(pos(1))+"-"+str(pos(2))
+
         self.sock.send(message(dest=dest,ty=TYPES['RES_PS'],message = str(pos)).str())
 
     def connexion(self):
@@ -199,6 +199,94 @@ class com(Thread):
 
              else :
                 console_queue.put("Message incompris : "+msg.toString())
+
+             #TODO : virer le sleep, gerer le cas ou la socket a été fermée
              time.sleep(1)
+
+
+
+"""
+
+    En chantier :
+
+"""
+
+
+class mobile(Thread):
+    #TODO definir quoi faire en cas de fin de ce thread
+    #TODO, on vas avoir un probleme quand une rpi voudra etre uniquement un mobile, structure à changer
+    def __init__(self,sock):
+        #Est-ce que c'est possible (ou est-ce que c'est simplement une bonne idée de gerer une meme socket sur 2 threads ?
+        Thread.__init__(self)
+        self.sock = sock
+        self.terminated = False
+        self.anchors = []
+
+    def run(self):
+        """
+            1/ Boucler jusqu'a connaitre trois ancre
+            2/ Demander leurs positions respectives
+            3/ Lancer l'algo de tracking
+
+            On vas commencer par uniquement considerer les trois premieres ancres connecter.
+            On pourra envisager par la suite de rechercher les plus proche, avec le temps de reponse le plus
+            ou n'importe quelle caracteristique intéressante
+        """
+
+        if not self.find_anchors():
+            console_queue.put("La connection a été intérompu avant de trouver un nombre suffisant d'ancre")
+            return
+
+
+
+
+    def find_anchors(self):
+        global TYPES
+        global id
+        while not len(self.anchors) >= 3 :
+
+            try :
+                console_queue.put("Recherche d'ancre ... ("+str(len(self.anchors))+")")
+                self.sock.send(message(dest=0,ty=TYPES['ASK_AL'],mess=id).str())
+                console_queue.put("En attente de récéption de l'id ["+str(i+1)+"]")
+                select.select([self.sock],[], [], com.TIMEOUT)
+            except select.error:
+                pass
+            except socket.error:
+                console_queue.put("Socket error")
+                return False
+            else:
+                msg = message(bytes=self.sock.recv(TYPES['BYTE_SZ']))
+
+                if msg.ty == TYPES['RES_AL'] :
+                    anch_num = int(msg.msg[0])
+                    console_queue.put("Liste d'ancre reçu : "+str(anch_num))
+
+                    for i in range(1,anch_num) :
+                        if i > 1 and i!= id :
+                            try :
+                                self.anchors.append([int(msg.msg[i])])#...
+                            except ValueError:
+                                console_queue.put("Message corrompu")
+                                break
+                                #Est-ce qu'on garde les ancres qui viennent d'etre ajoutée ?
+
+    def init_anchors(self):
+        # TODO : est-ce qu'on lance un thread pour chaque ancre active, ou alors on y vas au select ?
+
+        console_queue.put("Envoi des demandes de positions ...")
+        for i in self.anchors:
+            try :
+                self.sock.send(message(dest=i,ty=TYPES['ASK_PS'],mess=id).str())
+            except socket.error:
+                console_queue.put("Socket error")
+                return False
+
+        #
+
+
+
+
+
 
 main()

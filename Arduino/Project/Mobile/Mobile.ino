@@ -1,11 +1,9 @@
 #include "ESP8266.h"
 #include "Message.h"
 
-//#define SSID        "HONOR_KIW-L21_E44A"
-#define SSID        "adequin_renaud_95110"
+#define SSID        "HONOR_KIW-L21_E44A"
 
-//#define PASSWORD    "catalina"
-#define PASSWORD    "1234567890"
+#define PASSWORD    "catalina"
 #define SERVER_ADDR "192.168.0.10"
 #define PORT        4004
 #define NODE_TYPE 1
@@ -16,7 +14,7 @@
 
 
 
-int Self_ID;
+uint8_t Self_ID;
 
 bool isHost = false;
 ESP8266 esp;
@@ -58,7 +56,8 @@ void setup(void){
     * SETUP:
     * X Connect to AP
     * X Connect to server (TCP)
-    * - Recuperer la liste des ancres
+    * X Recuperer la liste des ancres
+    * - Recuperer les positions des ancres
     *
     * LOOP:
     * - get range evalualtion

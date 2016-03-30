@@ -17,11 +17,11 @@ int Anchor::getId(){
     return this->id;
 }
 
-int Anchor::getX(){
+float Anchor::getX(){
     return this->x;
 }
 
-int Anchor::getY(){
+float Anchor::getY(){
     return this->y;
 }
 

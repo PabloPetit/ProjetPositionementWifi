@@ -4,7 +4,21 @@
 int recv_Id(Server esp){
     uint8_t tmp[BYTE_SZ];
     int size = esp.recv(tmp, BYTE_SZ, 1000);
-    String str = (char*)tmp;
+
+    uint8_t type_message = tmp[1];
+    DEBUG.print("type message :");
+    DEBUG.println(type_message);
+    if(type_message != SET_ID){
+        return -1;
+    }
+    uint8_t id_Node = tmp[2];
+    DEBUG.print("id node :");
+    DEBUG.println(id_Node);
+    return id_Node;
+
+
+
+    /*String str = (char*)tmp;
     DEBUG.println(str);
     char type[2] = {0};
     String s = str.substring(1,2);
@@ -17,7 +31,7 @@ int recv_Id(Server esp){
     int myStringLength = str.length()+1;
     char myChar[myStringLength];
     str.toCharArray(myChar,myStringLength);
-    return atoi(myChar);
+    return atoi(myChar);*/
 }
 
 
@@ -83,8 +97,14 @@ Anchor recv_Anchor_Position(Server esp, Anchor ancre){
 
 
 bool send_Confirm_Id(Server esp){
+    uint8_t tmp[BYTE_SZ] = {0};
+    tmp[0] = SERVER_ID;
+    tmp[1] = CNF_ID;
+    return esp.send(tmp, BYTE_SZ);
+    /*
     char *hello = "011############################";
     return esp.send((const uint8_t*)hello, strlen(hello));
+    */
 }
 
 

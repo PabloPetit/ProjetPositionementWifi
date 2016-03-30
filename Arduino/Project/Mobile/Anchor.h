@@ -12,16 +12,16 @@ class Anchor {
 
         /****GET*****/
         int getId();
-        int getX();
-        int getY();
+        float getX();
+        float getY();
         float get_Range();
 
 
 
     private:
         int id;
-        int x;
-        int y;
+        float x;
+        float y;
         float last_Range;
 
 };

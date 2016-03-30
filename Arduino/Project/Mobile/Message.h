@@ -7,7 +7,7 @@
 
 #define Server ESP8266
 
-
+#define SERVER_ID 0
 #define MSG_SZ 32
 #define MSG_LN 30
 
@@ -37,7 +37,7 @@
  * @param esp - module wifi esp8266 pour la communication
  * @return l'id reçu
  */
-int recv_Id(Server esp);
+uint8_t recv_Id(Server esp);
 
 
 /**

@@ -245,17 +245,17 @@ class thread_client(Thread):
             try:
 
                 mess = message(dest=self.client.id, ty=TYPES['ASK_TY'], msg=server_id).str()
-                print(mess)
+                #print(mess)
                 self.client.sock.send(mess) # Demande son type au client
                 console_queue.put("En attente de réponse - client "+str(self.client.id)+" ...")
                 ready = select.select([self.client.sock],[], [], thread_client.TIMEOUT)
                 if ready[0] :
                     data = self.client.sock.recv(TYPES['BYTE_SZ'])
                     data = bytearray(data)
-                    print("BYTES : "+str(data))
+                    #print("BYTES : "+str(data))
                     msg = message(bytes=data)
                     ty = int(msg.msg[0])
-                    print("TY = "+str(ty))
+                    #print("TY = "+str(ty))
                     ok = False
                     if ty == TYPES['TY_ANCH'] :
                         console_queue.put("Le client "+str(self.client.id)+" est une ancre")
@@ -287,7 +287,7 @@ class thread_client(Thread):
         tmp = bytearray()
 
         for i in range(0,min(TYPES['MSG_LN'],len(anchor_list))):
-            tmp.append(int(anchor_list[i].id,8))
+            tmp.append(int(str(anchor_list[i].id)+"",8))
 
         try:
             self.client.sock.send(message(dest=self.client.id, ty=TYPES['RES_AL'], msg=tmp).str())
@@ -307,7 +307,7 @@ class thread_client(Thread):
                 pass
             else :
                 try:
-                    msg = message(string=self.client.sock.recv(TYPES['BYTE_SZ']))
+                    msg = message(bytes=self.client.sock.recv(TYPES['BYTE_SZ']))
 
                     if msg.dest != 0 :
                         sent = False

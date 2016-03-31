@@ -6,7 +6,7 @@ from proto import *
 import sys
 
 
-server_id = 1 #Le server à toujours pour id 1
+server_id = TYPES['SERV_ID'] #Le server à toujours pour id 1
 anchor_list = [] #Liste des ancres connectées
 mobile_list = [] #Liste des mobiles connecté
 client_list = [] #Liste des thread client
@@ -76,6 +76,8 @@ class console(Thread):
                 st = sys.stdin.readline().strip()
                 if st.lower() in ["exit","quit"]:
                     self.quit()
+                elif st.lower() in ["quitF","exitF"]:
+                    self.quit(empty=False)
                 elif st.lower() in ["list_m"]:
                     print("Liste des mobile")
                     print(mobile_list)

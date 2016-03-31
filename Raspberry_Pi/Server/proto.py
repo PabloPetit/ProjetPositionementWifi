@@ -5,7 +5,7 @@ TYPES = {}
 TYPES['MSG_SZ'] = 32
 TYPES['MSG_LN'] = 30
 
-i = 1
+TYPES['SERV_ID'] = 1
 
 TYPES['SET_ID'] = 1 # Donne son id à un noeud : MESS = id
 TYPES['CNF_ID'] = 2 # Confirme la reception de l'id : MESS = NULL

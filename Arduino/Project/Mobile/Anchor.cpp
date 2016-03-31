@@ -1,6 +1,6 @@
 #include "Anchor.h"
 
-Anchor::Anchor(int id){
+Anchor::Anchor(uint8_t id){
     this->id = id;
 }
 
@@ -13,7 +13,7 @@ void Anchor::set_Range(float r){
     this->last_Range = r;
 }
 
-int Anchor::getId(){
+uint8_t Anchor::getId(){
     return this->id;
 }
 

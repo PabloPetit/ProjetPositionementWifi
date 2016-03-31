@@ -1,12 +1,16 @@
 #include "ESP8266.h"
 #include "Message.h"
 
-#define SSID        "HONOR_KIW-L21_E44A"
+//#define SSID        "HONOR_KIW-L21_E44A"
+#define SSID        "adequin_renaud_95110"
 
-#define PASSWORD    "catalina"
-#define SERVER_ADDR "192.168.0.10"
-#define PORT        4004
-#define NODE_TYPE 1
+
+//#define PASSWORD    "catalina"
+#define PASSWORD    "1234567890"
+
+#define SERVER_ADDR "192.168.0.7"
+#define PORT        4002
+#define NODE_TYPE 2
 
 
 #define FAILURE "FAILURE"
@@ -31,7 +35,7 @@ void setup(void){
 
     ;
     Serial.print("send_ask_Anchor_List : ");
-    if(send_ask_Anchor_List(esp)){
+    if(send_ask_Anchor_List(esp, Self_ID)){
         Serial.println(SUCCESS);
     }
     anchor_List = recv_Anchor_List(esp);

@@ -80,7 +80,11 @@ class message:
             self.bytes.append(self.dest)
             self.bytes.append(self.ty)
             if msg :
-                self.bytes.append(self.msg)
+                if isinstance(self.msg,list):
+                    for i in self.msg:
+                        self.bytes.append(i)
+                else :
+                    self.bytes.append(self.msg)
 
         else :
             try :

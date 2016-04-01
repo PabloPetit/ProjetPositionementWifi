@@ -361,12 +361,3 @@ class thread_client(Thread):
 
 
 main()
-
-
-
-
-
-
-
-
-

@@ -2,6 +2,7 @@ import socket
 import select
 import sys
 import random
+import time
 from queue import Queue
 from threading import *
 from proto import *
@@ -12,10 +13,11 @@ class RpiRunner(Thread):
     TIMEOUT = 5
     MAX_ATTEMPS = 5
 
-    def __init__(self,ty,host,port,anchX = 5,anchY = 5):
+    def __init__(self,ty,host,port,anchX = 5,anchY = 5,showLog = False):
         Thread.__init__(self)
+        self.showLog = showLog
         self.cnsQ = Queue()
-        self.cns = Console(self.cnsQ)
+        self.cns = Console(self.cnsQ,showLog)
         self.ty = ty
         self.host = host
         self.port = port
@@ -49,29 +51,35 @@ class RpiRunner(Thread):
         self.terminate()
 
     def terminate(self):
-        print("Arret du programme ...")
+        if self.showLog :
+            print("Arret du programme ...")
         self.cnsQ.put("quit")
         self.sock.close()
-        print("Socket closed")
-        print("En attente de terminaison des Threads Ancre et/ou Mobile ...")
+        if self.showLog :
+            print("Socket closed")
+            print("En attente de terminaison des Threads Ancre et/ou Mobile ...")
         if self.th_anch :
             self.th_anch.terminate() #Pas sur que ça marche ...
             self.th_anch.join()
         if self.th_mob :
             self.th_mob.terminate()
             self.th_anch.join()
-        print("Fin du programme.")
+        if self.showLog :
+            print("Fin du programme.")
 
     def ask_id(self):
         global TYPES
         i = 0
         while i < RpiRunner.MAX_ATTEMPS :
+            ready = False
             try:
                 self.cnsQ.put("En attente de récéption de l'id ["+str(i+1)+"]")
-                select.select([self.sock],[], [], RpiRunner.TIMEOUT)
+                ready = select.select([self.sock],[], [], RpiRunner.TIMEOUT)
             except select.error:
+                self.cnsQ.put("Socket error (4)")
+                self.terminate()
                 pass
-            else:
+            if ready[0]:
                 msg = message(bytes=self.sock.recv(TYPES['BYTE_SZ']))
 
                 if msg.ty == TYPES['SET_ID'] :
@@ -150,8 +158,9 @@ class RpiRunner(Thread):
 
 class Console(Thread):
     TIMEOUT = 0.5
-    def __init__(self,console_queue):
+    def __init__(self,console_queue,showLog):
         Thread.__init__(self)
+        self.showLog = showLog
         self.queue = console_queue
         self.terminated = False
 
@@ -164,7 +173,8 @@ class Console(Thread):
             elif tmp.lower() in ["quitF","exitF"]:
                 self.quit(empty=False)
                 return
-            print(tmp)
+            if self.showLog :
+                print(tmp)
 
     def run(self):
         while(True):
@@ -180,9 +190,11 @@ class Console(Thread):
 
     def quit(self, empty = True):
         self.terminated = True
-        print("La console a été coupée")
+        if self.showLog :
+            print("La console a été coupée")
         if empty :
-            print("Vidage de la file :")
+            if self.showLog :
+                print("Vidage de la file :")
             self.queueService()
 
 
@@ -248,8 +260,7 @@ class Anchor(Thread):
             return True
 
     def send_dist(self,dest):
-        #TODO : ...
-        dist = random.uniform(3, 7) # On doit trouver 5 ?
+        dist = random.uniform(3, 7)
 
         bts = floatToRawLongBits(dist)
         self.sock.send(message(dest=dest,ty=TYPES['RES_DT'],message = bts).str())
@@ -275,15 +286,16 @@ class Mobile(Thread):
         self.cnsQ = Rpi.cnsQ
         self.x = x
         self.y = y
-        self.anch_list = []
+        self.anch_list = {}
         self.terminated = False
 
     def new_anch(self,id):
         res = {}
-        res['id'] = id
+        res['id'] = int(id)
         res['x'] = Mobile.V_MIN
         res['y'] = Mobile.V_MIN
         res['dist'] = Mobile.V_MIN
+        return res
 
     def run(self):
         self.cnsQ.put("Le mobile est lancé")
@@ -327,7 +339,7 @@ class Mobile(Thread):
         global TYPES
         for i in range(0,min(len(self.anch_list),Mobile.MIN_ANCH)):
             try:
-                self.sock.send(message(dest=self.anch_list[i],ty=TYPES['ASK_DT'],msg = self.id).str())
+                self.sock.send(message(dest=self.anch_list[i]['id'],ty=TYPES['ASK_DT'],msg = self.id).str())
                 ready = select.select([self.sock],[],[],RpiRunner.TIMEOUT)
                 if ready[0] :
                     try :
@@ -352,10 +364,12 @@ class Mobile(Thread):
             ready = None
             try :
                 self.cnsQ.put("Recherche d'ancre ... ("+str(len(self.anch_list))+")")
-                self.sock.send(message(dest=0,ty=TYPES['ASK_AL'],msg=self.id).str())
+                self.sock.send(message(dest=TYPES['SERV_ID'],ty=TYPES['ASK_AL'],msg=self.id).str())
                 self.cnsQ.put("En attente de récéption de la liste des ancres")
                 ready = select.select([self.sock],[], [], RpiRunner.TIMEOUT)
             except select.error:
+                self.cnsQ.put("Socket error (5 ?)")
+                return False
                 pass
             except socket.error:
                 self.cnsQ.put("Socket error (1)")
@@ -366,18 +380,33 @@ class Mobile(Thread):
                     if msg.ty == TYPES['RES_AL'] :
                         anch_num = int(msg.msg[0])
                         self.cnsQ.put("Liste d'ancre reçu : "+str(anch_num))
-                        tmp = []
-                        for i in range(1,anch_num) :
-                            if i > 1 and i!= id :
+                        tmp = {}
+                        for i in range(1,anch_num+1) :
+                            if int(msg.msg[i]) != id :
                                 try :
-                                    tmp.append(self.new_anch(int(msg.msg[i])))
+                                    tmp[int(msg.msg[i])] = self.new_anch(int(msg.msg[i]))
                                 except ValueError:
                                     self.cnsQ.put("Message corrompu")
                                     break
                         self.cnsQ.put("Liste des ancres récupérée : \n"+str(tmp))
-                        self.anch_list.append(tmp)
+                        for i in tmp.values():
+                            if i['id'] not in self.anch_list.keys():
+                                self.anch_list.update(tmp)
         return True
 
 
-rpi = RpiRunner(TYPES['TY_BOTH'],'localhost',4002)
+
+a1 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002)
+a2 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002)
+a3 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002)
+a4 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002)
+
+
+a1.start()
+a2.start()
+a3.start()
+a4.start()
+
+
+rpi = RpiRunner(TYPES['TY_MOB'],'localhost',4002, showLog=True)
 rpi.start()

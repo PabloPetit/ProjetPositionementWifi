@@ -166,12 +166,12 @@ class thread_client(Thread):
         try :
             client_list.remove(self)
             if self.client.ty == TYPES['TY_ANCH'] :
-                anchor_list.remove(client)
+                anchor_list.remove(self.client)
             elif self.client.ty == TYPES['TY_MOB'] :
-                mobile_list.remove(client)
+                mobile_list.remove(self.client)
             elif self.client.ty == TYPES['TY_BOTH'] :
-                anchor_list.remove(client)
-                mobile_list.remove(client)
+                anchor_list.remove(self.client)
+                mobile_list.remove(self.client)
         except ValueError :
             console_queue.put("Problème de remove")
             pass
@@ -226,12 +226,12 @@ class thread_client(Thread):
 
     def new_id(self): #TODO redefinir ce que fait cette fonction, inutil de retirer le client des liste si c'est pour lui rendre la meme id
         if self.client.ty == TYPES['TY_ANCH'] :
-            anchor_list.remove(client)
+            anchor_list.remove(self.client)
         elif self.client.ty == TYPES['TY_MOB'] :
-            mobile_list.remove(client)
+            mobile_list.remove(self.client)
         elif self.client.ty == TYPES['TY_BOTH'] :
-            anchor_list.remove(client)
-            mobile_list.remove(client)
+            anchor_list.remove(self.client)
+            mobile_list.remove(self.client)
 
         self.set_client_id()
 
@@ -284,10 +284,12 @@ class thread_client(Thread):
 
     def send_anchor_list(self):
 
-        tmp = bytearray()
+        tmp = []
 
         for i in range(0,min(TYPES['MSG_LN'],len(anchor_list))):
-            tmp.append(int(str(anchor_list[i].id)+"",8))
+            tmp.append(anchor_list[i].id)
+
+        print(tmp)
 
         try:
             self.client.sock.send(message(dest=self.client.id, ty=TYPES['RES_AL'], msg=tmp).str())
@@ -309,17 +311,17 @@ class thread_client(Thread):
                 try:
                     msg = message(bytes=self.client.sock.recv(TYPES['BYTE_SZ']))
 
-                    if msg.dest != 0 :
+                    if msg.dest != TYPES['SERV_ID'] :
                         sent = False
                         for mob in mobile_list :
-                            if mob.id == msg.dest : #TODO Faux : il faut mettre un truc genre int(msg.msg[0])
+                            if mob.id == msg.dest :
                                 mob.sock.send(msg.str())
                                 sent = True
                                 break
 
                         if not sent :
                             for mob in anchor_list :
-                                if mob.id == msg.dest : #TODO : La même
+                                if mob.id == msg.dest :
                                     mob.sock.send(msg.str())
                                     sent = True
                                     break

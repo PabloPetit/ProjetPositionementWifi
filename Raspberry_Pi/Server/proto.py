@@ -34,12 +34,20 @@ TYPES['TY_BOTH'] = 3
 TYPES['BYTE_SZ'] = 32 #taille du message : 65 apres encode (), 81 sans : pour 32 char
 
 
-def floatToRawLongBits(value):
-	return struct.unpack('Q', struct.pack('d', value))[0]
+def encode_float(f):
+    buf = struct.pack('f', f)
+    b = bytearray()
+
+    for i in buf:
+        b.append(i)
 
 
-def longBitsToFloat(bits):
-	return struct.unpack('d', struct.pack('Q', bits))[0]
+    return b
+
+def decode_float(tab):
+    buf = bytes(tab)
+    res = struct.unpack('f', tab)
+    return float(res[0])
 
 
 """
@@ -70,8 +78,9 @@ class message:
         if not bytes :
 
             try :
-                self.dest = int(str(dest),8)
-                self.ty = int(str(ty),8)
+                self.dest = dest
+                self.ty = ty
+
                 if msg or msg == 0 :
                     self.msg = msg
             except :
@@ -79,24 +88,32 @@ class message:
 
             self.bytes.append(self.dest)
             self.bytes.append(self.ty)
+
             if msg :
                 if isinstance(self.msg,list):
                     for i in self.msg:
                         self.bytes.append(i)
                 else :
-                    self.bytes.append(self.msg)
+                    self.bytes.append(msg)
 
         else :
+
             try :
                 self.dest = bytes[0]
                 self.ty = bytes[1]
                 self.msg = bytes[2:TYPES['MSG_SZ']]
+                self.bytes.append(self.dest)
+                self.bytes.append(self.ty)
+                for i in self.msg:
+                        self.bytes.append(i)
             except :
-                print("plus de place")
+                print("Plus de place")
                 pass
 
-        for i in range(0, TYPES['MSG_SZ']-len(self.bytes)):
-            self.bytes.append(int('0',8))
+        for i in range(len(self.bytes),TYPES["MSG_SZ"]):
+            self.bytes.append(0)
+
+
 
 
     def str(self):

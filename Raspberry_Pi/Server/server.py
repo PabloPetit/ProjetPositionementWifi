@@ -159,6 +159,10 @@ class thread_client(Thread):
 
     def close_connexion(self, pb = True):
         global TYPES
+        global anchor_list
+        global mobile_list
+        global client_list
+
         if pb :
             console_queue.put("Probleme de connexion avec le client "+str(self.client.id))
             console_queue.put("Fermeture de la connexion ...")
@@ -252,10 +256,8 @@ class thread_client(Thread):
                 if ready[0] :
                     data = self.client.sock.recv(TYPES['BYTE_SZ'])
                     data = bytearray(data)
-                    #print("BYTES : "+str(data))
                     msg = message(bytes=data)
                     ty = int(msg.msg[0])
-                    #print("TY = "+str(ty))
                     ok = False
                     if ty == TYPES['TY_ANCH'] :
                         console_queue.put("Le client "+str(self.client.id)+" est une ancre")
@@ -285,6 +287,7 @@ class thread_client(Thread):
     def send_anchor_list(self):
 
         tmp = []
+        tmp.append(int(min(TYPES['MSG_LN'],len(anchor_list))))
 
         for i in range(0,min(TYPES['MSG_LN'],len(anchor_list))):
             tmp.append(anchor_list[i].id)
@@ -303,51 +306,53 @@ class thread_client(Thread):
         global TYPES
         #Boucle de communication
         while not self.terminated:
+            ready = None
             try:
-                select.select([self.client.sock],[], [], thread_client.TIMEOUT)
+                ready = select.select([self.client.sock],[], [], thread_client.TIMEOUT)
             except select.error:
                 pass
             else :
                 try:
-                    msg = message(bytes=self.client.sock.recv(TYPES['BYTE_SZ']))
+                    if ready[0] :
+                        msg = message(bytes=bytearray(self.client.sock.recv(TYPES['BYTE_SZ'])))
 
-                    if msg.dest != TYPES['SERV_ID'] :
-                        sent = False
-                        for mob in mobile_list :
-                            if mob.id == msg.dest :
-                                mob.sock.send(msg.str())
-                                sent = True
-                                break
-
-                        if not sent :
-                            for mob in anchor_list :
+                        if msg.dest > TYPES['SERV_ID'] :
+                            sent = False
+                            for mob in mobile_list :
                                 if mob.id == msg.dest :
                                     mob.sock.send(msg.str())
                                     sent = True
                                     break
 
-                        if sent :
-                            console_queue.put("Message du client "+str(self.client.id)+" à été retransmit vers le client "+str(msg.dest))
-                        else:
-                            console_queue.put("Le message du client "+str(self.client.id)+" n'as pas trouvé de destinataire\n"+msg.toString())
-                            try:
-                                self.client.sock.send(message(dest=self.client.id, ty=TYPES['UNK_ID'],msg=msg.dest).str())
-                            except socket.error:
-                                self.close_connexion()
+                            if not sent :
+                                for mob in anchor_list :
+                                    if mob.id == msg.dest :
+                                        mob.sock.send(msg.str())
+                                        sent = True
+                                        break
+
+                            if sent :
+                                console_queue.put("Message du client "+str(self.client.id)+" à été retransmit vers le client "+str(msg.dest))
+                            else:
+                                console_queue.put("Le message du client "+str(self.client.id)+" n'as pas trouvé de destinataire\n"+msg.toString())
+                                try:
+                                    self.client.sock.send(message(dest=self.client.id, ty=TYPES['UNK_ID'],msg=msg.dest).str())
+                                except socket.error:
+                                    self.close_connexion()
 
 
-                    else :
-                        console_queue.put("Le message demande à être traité par le serveur")
+                        else :
+                            console_queue.put("Le message demande à être traité par le serveur")
 
-                        if msg.ty == TYPES['ASK_ID'] :
-                            console_queue.put("Demande d'id reçu du client "+str(self.client.id))
-                            self.new_id()
-                        elif msg.ty == TYPES['ASK_AL']:
-                            console_queue.put("Demande de liste des ancres reçu du client "+str(self.client.id))
-                            self.send_anchor_list()
-                        else:
-                            console_queue.put("Demande incomprise du client "+str(self.client.id))
-                            console_queue.put(msg.toString())
+                            if msg.ty == TYPES['ASK_ID'] :
+                                console_queue.put("Demande d'id reçu du client "+str(self.client.id))
+                                self.new_id()
+                            elif msg.ty == TYPES['ASK_AL']:
+                                console_queue.put("Demande de liste des ancres reçu du client "+str(self.client.id))
+                                self.send_anchor_list()
+                            else:
+                                console_queue.put("Demande incomprise du client "+str(self.client.id))
+                                console_queue.put(msg.toString())
 
                 except socket.error:
                         self.close_connexion()

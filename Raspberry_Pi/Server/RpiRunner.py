@@ -2,6 +2,7 @@ import socket
 import select
 import sys
 import random
+import struct
 import time
 from queue import Queue
 from threading import *
@@ -84,7 +85,8 @@ class RpiRunner(Thread):
 
                 if msg.ty == TYPES['SET_ID'] :
                     self.id = int(msg.msg[0])
-                    self.sock.send(message(dest=0,ty=TYPES['CNF_ID']).str())
+                    #self.sock.send(message(dest=['SERV_ID'],ty=TYPES['CNF_ID']).str())
+                    self.sock.send(message(dest=TYPES['SERV_ID'],ty=TYPES['CNF_ID']).str())
                     return True
                 else :
                     self.cnsQ.put("Message reçu non conforme : \n"+msg.toString())
@@ -221,30 +223,34 @@ class Anchor(Thread):
 
     def loop(self):
         while not self.terminated :
-            ready = select.select([self.sock],[],[],RpiRunner.TIMEOUT)
-            if ready[0] :
-                msg = message(bytes=self.sock.recv(TYPES['BYTE_SZ']))
-                self.cnsQ.put("Un message a été reçu : ")
+            try :
+                ready = select.select([self.sock],[],[],RpiRunner.TIMEOUT)
+                if ready[0] :
+                    msg = message(bytes=self.sock.recv(TYPES['BYTE_SZ']))
+                    self.cnsQ.put("Un message a été reçu : ")
 
-                if msg.ty == TYPES['ASK_TY']:
-                    self.cnsQ.put("Demande de type reçu du client "+str(int(msg.msg[0])))
-                    if not self.inform_type(int(msg.msg[0])):
-                        self.terminate()
-                        return
+                    if msg.ty == TYPES['ASK_TY']:
+                        self.cnsQ.put("Demande de type reçu du client "+str(int(msg.msg[0])))
+                        if not self.inform_type(int(msg.msg[0])):
+                            self.terminate()
+                            return
 
-                elif msg.ty == TYPES['ASK_DT']:
-                    self.cnsQ.put("Demande d'évaluation de distance reçu du client "+str(int(msg.msg[0])))
-                    self.send_dist(int(msg.msg[0]))
+                    elif msg.ty == TYPES['ASK_DT']:
+                        self.cnsQ.put("Demande d'évaluation de distance reçu du client "+str(int(msg.msg[0])))
+                        self.send_dist(int(msg.msg[0]))
 
-                elif msg.ty == TYPES['ASK_PS']:
-                    self.cnsQ.put("Demande de position reçu du client "+str(int(msg.msg[0])))
-                    self.send_pos(int(msg.msg[0]))
+                    elif msg.ty == TYPES['ASK_PS']:
+                        self.cnsQ.put("Demande de position reçu du client "+str(int(msg.msg[0])))
+                        self.send_pos(int(msg.msg[0]))
 
-                elif msg.ty == TYPES['CNF_TY']:
-                    self.cnsQ.put("Le serveur confirme qu'il as bien reçu le type")
+                    elif msg.ty == TYPES['CNF_TY']:
+                        self.cnsQ.put("Le serveur confirme qu'il as bien reçu le type")
 
-                else :
-                    self.cnsQ.put("Message incompris : "+msg.toString())
+                    else :
+                        self.cnsQ.put("Message incompris : "+msg.toString())
+            except select.error :
+                self.cnsQ.put("Socket error (6)")
+                return
 
     def inform_type(self,dest):
         try :
@@ -260,15 +266,23 @@ class Anchor(Thread):
             return True
 
     def send_dist(self,dest):
-        dist = random.uniform(3, 7)
 
-        bts = floatToRawLongBits(dist)
-        self.sock.send(message(dest=dest,ty=TYPES['RES_DT'],message = bts).str())
+        dist = 42.42
+
+        mess = encode_float(dist)
+
+        b = bytearray()
+        b.append(dest)
+        b.append(TYPES['RES_DT'])
+        b.extend(mess)
+
+        tmp = message(bytes=b)
+
+        self.sock.send(tmp.str())
 
     def send_pos(self,dest):
         #TODO : ...
-        mess = floatToRawLongBits(self.x).append(floatToRawLongBits(self.y))#j'y crois pas trop
-        self.sock.send(message(dest=dest,ty=TYPES['RES_PS'],message = self.x).str())
+        self.sock.send(message(dest=dest,ty=TYPES['RES_PS'],msg = self.x).str())
 
 
 class Mobile(Thread):
@@ -282,7 +296,7 @@ class Mobile(Thread):
         self.Rpi = Rpi
         self.ty = Rpi.ty
         self.sock = Rpi.sock
-        self.id = Rpi.id
+        self.id = int(Rpi.id)
         self.cnsQ = Rpi.cnsQ
         self.x = x
         self.y = y
@@ -318,10 +332,11 @@ class Mobile(Thread):
         # Faire la triangulation
         pass
 
-    def maj_anch(self,i,dist):
-        #Reçoit un float et un indice
+    def maj_anch(self,anch,msg):
 
-        anch = self.anch_list[i]
+        dist = decode_float(msg[0:4])
+
+        self.cnsQ.put("Distance reçu de l'ancre "+str(anch['id'])+" : "+str(dist))
 
         if dist > anch['dist']:
             #Adjust +
@@ -337,15 +352,19 @@ class Mobile(Thread):
     def ask_for_distance(self):
         #On leurs demande un par un
         global TYPES
-        for i in range(0,min(len(self.anch_list),Mobile.MIN_ANCH)):
+        cmp = 0
+        for i in self.anch_list.values():
+            if cmp == Mobile.MIN_ANCH :
+                break
             try:
-                self.sock.send(message(dest=self.anch_list[i]['id'],ty=TYPES['ASK_DT'],msg = self.id).str())
+                msg = message(dest=i['id'],ty=TYPES['ASK_DT'],msg=int(self.id))
+                self.sock.send(msg.str())
                 ready = select.select([self.sock],[],[],RpiRunner.TIMEOUT)
                 if ready[0] :
                     try :
                         msg = message(bytes=self.sock.recv(TYPES['BYTE_SZ']))
                         if msg.ty == TYPES['RES_DT']:
-                            self.maj_anch(i,longBitsToFloat(msg.msg))
+                            self.maj_anch(i,msg.msg)
                         else :
                             self.cnsQ.put("Message érroné")
                     except socket.error :
@@ -355,6 +374,8 @@ class Mobile(Thread):
                     self.cnsQ.put("Pas de reponse") #Message a changer
             except socket.error:
                 self.cnsQ.put("Socket error (2)")
+            time.sleep(3)
+            cmp+=1
 
 
 
@@ -377,6 +398,9 @@ class Mobile(Thread):
             else:
                 if ready[0]:
                     msg = message(bytes=self.sock.recv(TYPES['BYTE_SZ']))
+
+                    self.cnsQ.put("Message reçu : "+msg.toString())
+
                     if msg.ty == TYPES['RES_AL'] :
                         anch_num = int(msg.msg[0])
                         self.cnsQ.put("Liste d'ancre reçu : "+str(anch_num))
@@ -396,7 +420,7 @@ class Mobile(Thread):
 
 
 
-a1 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002)
+a1 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002,showLog=True)
 a2 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002)
 a3 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002)
 a4 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002)

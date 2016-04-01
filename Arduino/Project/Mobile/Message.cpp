@@ -90,7 +90,7 @@ bool send_Type_Node(Server esp, uint8_t node_type){
 
 bool send_ask_Anchor_List(Server esp, uint8_t id){
     uint8_t tmp[BYTE_SZ] = {0};
-    tmp[0] = SERVER_ID;
+    //tmp[0] = SERVER_ID;
     tmp[1] = ASK_AL;
     tmp[2] = id;
     return esp.send(tmp, BYTE_SZ);

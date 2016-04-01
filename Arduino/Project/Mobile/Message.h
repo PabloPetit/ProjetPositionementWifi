@@ -31,7 +31,7 @@
 #define CNF_ID  2        // Confirme la reception de l'id : MESS = NULL
 #define ASK_TY  3        // Demande le type d'un noeud : MESS = id
 #define RES_TY  4        // Donne son type  : MESS = A | M
-#define CNF_TY  5        //Confirme la reception du type
+#define CNF_TY  5        // Confirme la reception du type
 #define ASK_AL  6        // Demande la liste des ancres : MESS = id
 #define RES_AL  7        // Donne la liste des ancres : MESS = int + id*
 #define ASK_DT  8        // Demande une evaluation de distance : MESS = id
@@ -70,6 +70,16 @@ bool recv_Ask_Node_Type(Server esp);
  * @return Vector<Anchor> liste des ancres
  */
 Vector<Anchor> recv_Anchor_List(Server esp);
+
+
+/**
+ * Récupère la confirmation du serveur sur notre type
+ *
+ * @param esp - module wifi esp8266 pour la communication
+ * @retval true confirmation correct
+ * @retval false
+ */
+bool recv_Comfirm_Type(Server esp);
 
 
 /**

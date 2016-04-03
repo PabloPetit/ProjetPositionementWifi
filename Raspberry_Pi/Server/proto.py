@@ -75,7 +75,7 @@ class message:
 
         self.bytes = bytearray()
 
-        if not bytes :
+        if not bytes and bytes !=0 :
 
             try :
                 self.dest = dest

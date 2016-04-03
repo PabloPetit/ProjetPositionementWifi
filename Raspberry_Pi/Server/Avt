@@ -1,0 +1,75 @@
+import random
+import time
+import matplotlib.pyplot as plt
+
+class Avt:
+
+    def __init__(self,mini,maxi,tolerance):
+        self.mini = mini
+        self.maxi = maxi
+        self.currentVal = mini
+        self.tolerance = tolerance
+        self.delta = maxi
+        self.it = 0
+        self.sens = 0 # -1 0 ou 1
+        self.itBSens = 0
+        self.itMSens = 0
+
+
+    def update(self,val):
+
+        error = self.currentVal - val
+
+        if error > 0 :
+            self.adjust(1)
+            self.currentVal = min(self.maxi, self.currentVal + self.delta)
+        elif error < 0 :
+            self.adjust(-1)
+            self.currentVal = max(self.mini, self.currentVal - self.delta)
+        else :
+            self.adjust(0)
+
+    def adjust(self,sens):
+
+        if sens == self.sens : #Reduire delta
+            self.itBSens += 1
+            self.itMSens = 0
+            new_delta = self.delta - (self.maxi/2)/self.itBSens
+            self.delta  = max(self.tolerance, new_delta)
+
+        else:
+            self.itMSens += 1
+            self.itBSens = 0
+            new_delta = self.delta + self.itMSens
+            self.delta  = min(self.maxi, new_delta)
+
+        self.sens = sens
+
+
+
+avt = Avt(0,100,0.001)
+v= []
+ds = []
+delta = []
+i = 0
+
+while i < 25 :
+
+    #print("Distance courante : "+str(avt.currentVal))
+    dist = random.gauss(42,10)
+    #print("Distance envoyee : "+str(dist))
+    avt.update(dist)
+    v.append(avt.currentVal)
+    ds.append(dist)
+    delta.append(avt.delta)
+    #time.sleep(0.1)
+    i+=1
+
+plt.plot(ds)
+plt.plot(v)
+
+print(v)
+print(delta)
+#plt.plot(delta)
+#plt.ylabel('some numbers')
+plt.show()

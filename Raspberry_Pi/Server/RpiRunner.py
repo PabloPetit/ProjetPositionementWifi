@@ -14,7 +14,7 @@ class RpiRunner(Thread):
     TIMEOUT = 5
     MAX_ATTEMPS = 5
 
-    def __init__(self,ty,host,port,anchX = 5,anchY = 5,showLog = False):
+    def __init__(self,ty,host,port,anchX = 5,anchY = 6,showLog = False):
         Thread.__init__(self)
         self.showLog = showLog
         self.cnsQ = Queue()
@@ -267,7 +267,7 @@ class Anchor(Thread):
 
     def send_dist(self,dest):
 
-        dist = 42.42
+        dist = random.gauss(42,20)
 
         mess = encode_float(dist)
 
@@ -281,12 +281,24 @@ class Anchor(Thread):
         self.sock.send(tmp.str())
 
     def send_pos(self,dest):
-        #TODO : ...
-        self.sock.send(message(dest=dest,ty=TYPES['RES_PS'],msg = self.x).str())
+
+        X = encode_float(self.x)
+        Y = encode_float(self.y)
+
+        b = bytearray()
+        b.append(dest)
+        b.append(TYPES['RES_PS'])
+        b.extend(X)
+        b.extend(Y)
+
+        tmp = message(bytes=b)
+
+        self.sock.send(tmp.str())
 
 
 class Mobile(Thread):
 
+    MARGIN = 0.01
     V_MIN = 0
     V_MAX = 100
     MIN_ANCH = 3
@@ -306,14 +318,15 @@ class Mobile(Thread):
     def new_anch(self,id):
         res = {}
         res['id'] = int(id)
-        res['x'] = Mobile.V_MIN
-        res['y'] = Mobile.V_MIN
-        res['dist'] = Mobile.V_MIN
+        res['x'] = None
+        res['y'] = None
+        res['dist'] = Mobile.V_MAX
+        res['avt'] = 0
         return res
 
     def run(self):
         self.cnsQ.put("Le mobile est lancé")
-        self.find_anchors()
+        self.set_anchor_list()
         self.loop()
 
     def terminate(self):
@@ -332,21 +345,47 @@ class Mobile(Thread):
         # Faire la triangulation
         pass
 
+
     def maj_anch(self,anch,msg):
 
         dist = decode_float(msg[0:4])
 
         self.cnsQ.put("Distance reçu de l'ancre "+str(anch['id'])+" : "+str(dist))
 
-        if dist > anch['dist']:
-            #Adjust +
-            pass
-        elif dist < anch['dist']:
-            #adjust -
-            pass
-        else :
-            # OK
-            pass
+       # self.avt(anch,dist)
+
+    def set_anchor_position(self,anch,msg):
+        x = decode_float(msg[0:4])
+        y = decode_float(msg[4:8])
+        anch['x'] = x
+        anch['y'] = y
+
+        self.cnsQ.put("Position de l'ancre "+str(anch['id'])+" reçu :  x = "+str(x)+" y = "+str(y))
+
+    def ask_position(self,anch):
+        global TYPES
+        try:
+            msg = message(dest=anch['id'],ty=TYPES['ASK_PS'],msg=int(self.id))
+            self.sock.send(msg.str())
+            ready = select.select([self.sock],[],[],RpiRunner.TIMEOUT)
+            if ready[0] :
+                try :
+                    msg = message(bytes=self.sock.recv(TYPES['BYTE_SZ']))
+                    if msg.ty == TYPES['RES_PS']:
+                        self.set_anchor_position(anch,msg.msg)
+                        return True
+                    else :
+                        self.cnsQ.put("Message érroné : (2)\n"+msg.toString())
+                        return False
+                except socket.error :
+                    self.cnsQ.put("Socket error (3)")
+                    return False
+            else:
+                self.cnsQ.put("Pas de reponse") #Message a changer
+        except socket.error:
+            self.cnsQ.put("Socket error (2)")
+            return False
+        return True
 
 
     def ask_for_distance(self):
@@ -366,7 +405,7 @@ class Mobile(Thread):
                         if msg.ty == TYPES['RES_DT']:
                             self.maj_anch(i,msg.msg)
                         else :
-                            self.cnsQ.put("Message érroné")
+                            self.cnsQ.put("Message érroné : (1)\n"+msg.toString())
                     except socket.error :
                         self.cnsQ.put("Socket error (3)")
                         return False
@@ -377,6 +416,26 @@ class Mobile(Thread):
             time.sleep(3)
             cmp+=1
 
+    def set_anchor_list(self):
+        global TYPES
+
+        while not len(self.anch_list) >= Mobile.MIN_ANCH:
+
+            self.find_anchors()
+            tmp = []
+            for i in self.anch_list :
+                j = 0
+                ok = False
+                while j < RpiRunner.MAX_ATTEMPS :
+                    if self.ask_position(self.anch_list[i]) :
+                        ok = True
+                        break
+                    j+=1
+                if not ok :
+                    tmp.append(self.anch_list[i])
+
+            self.anch_list = {key: value for key, value in self.anch_list.items() if value not in tmp}
+            time.sleep(3)
 
 
     def find_anchors(self):

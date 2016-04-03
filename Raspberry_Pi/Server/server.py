@@ -167,6 +167,8 @@ class thread_client(Thread):
             console_queue.put("Probleme de connexion avec le client "+str(self.client.id))
             console_queue.put("Fermeture de la connexion ...")
         self.client.sock.close()
+
+        console_queue.put("Liste avant : "+str(anchor_list))
         try :
             client_list.remove(self)
             if self.client.ty == TYPES['TY_ANCH'] :
@@ -179,6 +181,10 @@ class thread_client(Thread):
         except ValueError :
             console_queue.put("Problème de remove")
             pass
+
+
+        console_queue.put("Client : "+str(self.client))
+        console_queue.put("Liste apres : "+str(anchor_list))
 
         self.terminated = True
         console_queue.put("Connection terminée avec le client : "+str(self.client.id))
@@ -310,6 +316,7 @@ class thread_client(Thread):
             try:
                 ready = select.select([self.client.sock],[], [], thread_client.TIMEOUT)
             except select.error:
+                self.close_connexion()
                 pass
             else :
                 try:

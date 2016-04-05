@@ -5,6 +5,8 @@ import math
 
 class Avt:
 
+    DELTA_MULTI = 1.5
+
     def __init__(self,mini,maxi,tolerance):
         self.mini = mini
         self.maxi = maxi
@@ -13,7 +15,6 @@ class Avt:
         self.delta = maxi
         self.it = 0
         self.sens = 0 # -1 0 ou 1
-        self.itBSens = 0
         self.itMSens = 0
 
 
@@ -34,32 +35,35 @@ class Avt:
 
     def adjust(self,sens):
 
-        self.delta /= 1.05
-
-        return
-"""
-        if sens == self.sens : #Reduire delta
-            self.itBSens += 1
-            self.itMSens = 0
+        if sens == self.sens :
+            self.itMSens += 1
+            self.delta *= Avt.DELTA_MULTI
+            if self.delta > self.maxi :
+                self.delta = self.maxi
 
         else:
-            self.itMSens += 1
-            self.itBSens = 0
+            self.itMSens -= 1
+            self.delta /= Avt.DELTA_MULTI
+            if self.delta < self.mini :
+                self.delta = self.mini
 
-"""
+        self.sens = sens
 
 
 
-avt = Avt(0,100,0.001)
+avt = Avt(0,100,0.0001)
 v= []
 ds = []
 delta = []
 i = 0
 
-while i < 200 :
+its = 400
+sigma = 10
 
-    #print("Distance courante : "+str(avt.currentVal))
-    dist = random.gauss(42,5)
+while i < its :
+
+    dist = random.gauss(42,sigma)
+
     #print("Distance envoyee : "+str(dist))
     avt.update(dist)
     v.append(avt.currentVal)
@@ -73,6 +77,6 @@ plt.plot(v)
 
 print(avt.currentVal)
 #print(delta)
-#plt.plot(delta)
+plt.plot(delta)
 #plt.ylabel('some numbers')
 plt.show()

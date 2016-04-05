@@ -6,7 +6,7 @@
 
 #define PASSWORD    "catalina"
 
-#define SERVER_ADDR "192.168.43.216"
+#define SERVER_ADDR "192.168.43.44"
 #define PORT        4002
 #define NODE_TYPE 2
 
@@ -38,13 +38,12 @@ void setup(void){
     anchor_List = recv_Anchor_List(esp);
 
     for (size_t i = 0; i < anchor_List.size(); i++) {
-        Serial.print("Anchor ");
-        Serial.print(i);
-        Serial.print(" id :");
-        Serial.println(anchor_List[i].getId());
 
         send_ask_Position(esp, anchor_List[i], Self_ID);
         recv_Anchor_Position(esp, anchor_List[i]);
+
+        send_ask_Distance(esp, anchor_List[i], Self_ID);
+        recv_Anchor_Distance(esp, anchor_List[i]);
 
 
     }

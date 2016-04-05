@@ -5,19 +5,6 @@
 #include "Anchor.h"
 #include "Vector.h"
 
-/**
- * 4 Byte to float
- * float f;
- * uchar b[] = {b3, b2, b1, b0};
- * memcpy(&f, &b, sizeof(f));
- * return f;
- *
- */
-
-
-
-
-
 #define Server ESP8266
 
 #define SERVER_ID 1
@@ -90,6 +77,14 @@ bool recv_Comfirm_Type(Server esp);
  */
 Anchor recv_Anchor_Position(Server esp, Anchor ancre);
 
+/**
+ * Récupère La position d'une ancre
+ *
+ * @param esp - module wifi esp8266 pour la communication
+ * @return Ancre liste des ancres
+ */
+Anchor recv_Anchor_Distance(Server esp, Anchor ancre);
+
 
 
 // RECEPTION
@@ -132,5 +127,15 @@ bool send_ask_Anchor_List(Server esp, uint8_t id);
  */
 bool send_ask_Position(Server esp, Anchor anchor, uint8_t id);
 
+
+
+/**
+ * Envoi au serveur une demande de la position d'une ancre
+ *
+ * @param esp - module wifi esp8266 pour la communication
+ * @retval true - success.
+ * @retval false - failure.
+ */
+bool send_ask_Distance(Server esp, Anchor anchor, uint8_t id);
 
 #endif

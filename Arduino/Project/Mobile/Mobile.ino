@@ -1,5 +1,7 @@
 #include "ESP8266.h"
+#include "Arduino.h"
 #include "Message.h"
+#include "Avt.h"
 
 #define SSID        "HONOR_KIW-L21_E44A"
 
@@ -28,8 +30,30 @@ void setup(void){
     Serial.begin(9600);
     Serial1.begin(115200);
     esp = ESP8266();
+    Vector<Anchor> anchor_List;
+    anchor_List.push_back(Anchor(1));
 
-    bool init = init_Client();
+    anchor_List[0].set_Position(4.0, 4.0);
+    anchor_List[0].set_Range(4.0);
+
+    anchor_List.push_back(Anchor(2));
+    anchor_List[1].set_Position(9.0, 7.0);
+    anchor_List[1].set_Range(3.0);
+
+    anchor_List.push_back(Anchor(3));
+    anchor_List[2].set_Position(9.0, 1.0);
+    anchor_List[2].set_Range(3.25);
+
+    Mobile mobile = Mobile(4);
+
+
+    mobile = trilateration(anchor_List, mobile);
+    Serial.print("X :");
+    Serial.println(mobile.getX());
+    Serial.print("Y :");
+    Serial.println(mobile.getY());
+
+    /*bool init = init_Client();
 
     Serial.print("send_ask_Anchor_List : ");
     if(send_ask_Anchor_List(esp, Self_ID)){
@@ -47,6 +71,8 @@ void setup(void){
 
 
     }
+
+    */
 
 
 

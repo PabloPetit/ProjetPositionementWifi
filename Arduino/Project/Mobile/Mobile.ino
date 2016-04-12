@@ -12,91 +12,109 @@
 #define PORT        4002
 #define NODE_TYPE 2
 
-
 #define FAILURE "FAILURE"
 #define SUCCESS "SUCCESS"
 
+#define TEST true
 
 
 uint8_t Self_ID;
-
-bool isHost = false;
+Mobile mobile = Mobile(4);
 ESP8266 esp;
+int iteration = 1;
 
 Vector<Anchor> anchor_List;
 
-void setup(void){
-    // Init WIFI
-    Serial.begin(9600);
-    Serial1.begin(115200);
-    esp = ESP8266();
-    Vector<Anchor> anchor_List;
-    anchor_List.push_back(Anchor(1));
+void test_loop(){
+    mobile.get_chosen_Anchor_I(0)->adjust_Range(141.42+range());
 
-    anchor_List[0].set_Position(4.0, 4.0);
-    anchor_List[0].set_Range(4.0);
+    //Mise a jour dur range
+    mobile.get_chosen_Anchor_I(1)->adjust_Range(100+range());
 
-    anchor_List.push_back(Anchor(2));
-    anchor_List[1].set_Position(9.0, 7.0);
-    anchor_List[1].set_Range(3.0);
+    //Mise a jour dur range
+    mobile.get_chosen_Anchor_I(2)->adjust_Range(100+range());
 
-    anchor_List.push_back(Anchor(3));
-    anchor_List[2].set_Position(9.0, 1.0);
-    anchor_List[2].set_Range(3.25);
+    Serial.print("------------------------");
+    Serial.print(iteration);
+    Serial.println("------------------------");
 
-    Mobile mobile = Mobile(4);
+    /*Serial.print("Avt range A_");
+    Serial.print(mobile.get_chosen_Anchor_I(0)->getId());
+    Serial.print(" :");
+    Serial.println(mobile.get_chosen_Anchor_I(0)->get_Range());
 
 
-    mobile = trilateration(anchor_List, mobile);
+    Serial.print("Avt range A_");
+    Serial.print(mobile.get_chosen_Anchor_I(1)->getId());
+    Serial.print(" :");
+    Serial.println(mobile.get_chosen_Anchor_I(1)->get_Range());
+
+
+    Serial.print("Avt range A_");
+    Serial.print(mobile.get_chosen_Anchor_I(2)->getId());
+    Serial.print(" :");
+    Serial.println(mobile.get_chosen_Anchor_I(2)->get_Range());*/
+    for(int i = 0; i < mobile.get_chosen_Anchor().size(); i++){
+
+        Serial.print("Avt range A_");
+        Serial.print(mobile.get_chosen_Anchor_I(i)->getId());
+        Serial.print(" :");
+        Serial.println(mobile.get_chosen_Anchor_I(i)->get_Range());
+    }
+
+    mobile.trilateration();
+
+
     Serial.print("X :");
     Serial.println(mobile.getX());
     Serial.print("Y :");
     Serial.println(mobile.getY());
-
-    /*bool init = init_Client();
-
-    Serial.print("send_ask_Anchor_List : ");
-    if(send_ask_Anchor_List(esp, Self_ID)){
-        Serial.println(SUCCESS);
-    }
-    anchor_List = recv_Anchor_List(esp);
-
-    for (size_t i = 0; i < anchor_List.size(); i++) {
-
-        send_ask_Position(esp, anchor_List[i], Self_ID);
-        recv_Anchor_Position(esp, anchor_List[i]);
-
-        send_ask_Distance(esp, anchor_List[i], Self_ID);
-        recv_Anchor_Distance(esp, anchor_List[i]);
-
-
-    }
-
-    */
-
-
-
-
-    /**
-    * SETUP:
-    * X Connect to AP
-    * X Connect to server (TCP)
-    * X Recuperer la liste des ancres
-    * - Recuperer les positions des ancres
-    *
-    * LOOP:
-    * - get range evalualtion
-    * -
-    */
-
-
+    iteration++;
 }
 
-void loop(void){
-  delay(100);
-  //Serial.println(esp.getAPList());
+void real_loop(){
+    Serial.print("------------------------");
+    Serial.print(iteration);
+    Serial.println("------------------------");
+    for(int i = 0; i < mobile.get_chosen_Anchor().size(); i++){
+        send_ask_Distance(esp, mobile.get_chosen_Anchor_I(i), Self_ID);
+        recv_Anchor_Position(esp, mobile.get_chosen_Anchor_I(i));
+
+        Serial.print("Avt range A_");
+        Serial.print(mobile.get_chosen_Anchor_I(i)->getId());
+        Serial.print(" :");
+        Serial.println(mobile.get_chosen_Anchor_I(i)->get_Range());
+    }
+    mobile.trilateration();
+    Serial.print("X :");
+    Serial.println(mobile.getX());
+    Serial.print("Y :");
+    Serial.println(mobile.getY());
+    iteration++;
 }
 
+void test_init(){
+    Vector<Anchor*> anchor_List;
+
+    anchor_List.push_back(new Anchor(1));
+    anchor_List[0]->set_Position(0.0, 0.0);
+    anchor_List[0]->adjust_Range(141.42);
+    Serial.println(anchor_List[0]->get_Range());
+
+    anchor_List.push_back(new Anchor(2));
+    anchor_List[1]->set_Position(0.0, 100.0);
+    anchor_List[1]->adjust_Range(100.0);
+
+    anchor_List.push_back(new Anchor(3));
+    anchor_List[2]->set_Position(100.0, 0.0);
+    anchor_List[2]->adjust_Range(100.0);
+
+    mobile = Mobile(4);
+    mobile.update_Anchor_Liste(anchor_List);
+
+    randomSeed(analogRead(0));
+
+}
 
 bool init_Client(){
     // connect to AP
@@ -171,9 +189,68 @@ bool init_Client(){
     }
 
 
+    mobile = Mobile(Self_ID);
+
+    Serial.print("send_ask_Anchor_List : ");
+    if(send_ask_Anchor_List(esp, Self_ID)){
+        Serial.println(SUCCESS);
+    }
+    else {
+        Serial.println(FAILURE);
+        return false;
+    }
+
+    Vector<Anchor*> anchor_List;
+
+    anchor_List = recv_Anchor_List(esp);
+
+    for (size_t i = 0; i < anchor_List.size(); i++) {
+        Serial.print("send_ask_Position id ");
+        Serial.print(anchor_List[i]->getID());
+        Serial.print(" :");
+        if(send_ask_Position(esp, anchor_List[i], Self_ID)){
+            Serial.println(SUCCESS);
+        }
+        else {
+            Serial.println(FAILURE);
+            return false;
+        }
+        recv_Anchor_Position(esp, anchor_List[i]);
+    }
+    mobile.update_Anchor_Liste(anchor_List);
+
     return true;
 
+}
+
+
+void setup(void){
+    // Init WIFI
+    Serial.begin(9600);
+    Serial1.begin(115200);
+    esp = ESP8266();
+    if(TEST)
+        test_init();
+    else {
+        init_Client();
+    }
+
+}
+
+void loop(void){
+  delay(500);
+  if(TEST)test_loop();
+  else real_loop();
+  //Serial.println(esp.getAPList());
+}
 
 
 
+
+
+
+float range(){
+    float rand = random(10);
+    if(rand>10/2) return 10-rand;
+    return rand;
 }

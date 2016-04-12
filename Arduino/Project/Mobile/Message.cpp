@@ -45,10 +45,10 @@ bool recv_Comfirm_Type(Server esp){
     return true;
 }
 
-Vector<Anchor> recv_Anchor_List(Server esp){
+Vector<Anchor*> recv_Anchor_List(Server esp){
     uint8_t tmp[BYTE_SZ];
     int size = esp.recv(tmp, BYTE_SZ, 2000);
-    Vector<Anchor> anchor_List;
+    Vector<Anchor*> anchor_List;
     uint8_t type_message = tmp[1];
     if(type_message != RES_AL){
         DEBUG.print("\ntype receive ");
@@ -59,7 +59,7 @@ Vector<Anchor> recv_Anchor_List(Server esp){
     }
     uint8_t i = 2;
     while (tmp[i] != 0) {
-        anchor_List.push_back(Anchor(tmp[i]));
+        anchor_List.push_back(new Anchor(tmp[i]));
         i++;
     }
     return anchor_List;
@@ -67,26 +67,31 @@ Vector<Anchor> recv_Anchor_List(Server esp){
 
 
 
-Anchor recv_Anchor_Position(Server esp, Anchor ancre){
+void recv_Anchor_Position(Server esp, Anchor *ancre){
     uint8_t tmp[BYTE_SZ];
     int size = esp.recv(tmp, BYTE_SZ, 2000);
+    float x;
+    uint8_t b[] = {tmp[2], tmp[3], tmp[4], tmp[5]};
+    memcpy(&x, &b, sizeof(x));
+    float y;
+    uint8_t c[] = {tmp[2], tmp[3], tmp[4], tmp[5]};
+    memcpy(&y, &c, sizeof(y));
     String str = (char*)tmp;
     DEBUG.println(str);
-    return ancre;
+    ancre->set_Position(x, y);
 }
 
-Anchor recv_Anchor_Distance(Server esp, Anchor ancre){
+void recv_Anchor_Distance(Server esp, Anchor *ancre){
     uint8_t tmp[BYTE_SZ];
     int size = esp.recv(tmp, BYTE_SZ, 2000);
     float f;
     uint8_t b[] = {tmp[2], tmp[3], tmp[4], tmp[5]};
     memcpy(&f, &b, sizeof(f));
     DEBUG.print("Distance receive from :");
-    DEBUG.print(ancre.getId());
+    DEBUG.print(ancre->getId());
     DEBUG.print(" = ");
     DEBUG.println(f);
-    ancre.set_Range(f);
-    return ancre;
+    ancre->adjust_Range(f);
 }
 
 
@@ -131,19 +136,19 @@ bool send_ask_Anchor_List(Server esp, uint8_t id){
 
 }
 
-bool send_ask_Position(Server esp, Anchor anchor, uint8_t id){
+bool send_ask_Position(Server esp, Anchor *anchor, uint8_t id){
     uint8_t tmp[BYTE_SZ] = {0};
     tmp[0] = SERVER_ID;
     tmp[1] = ASK_PS;
-    tmp[2] = anchor.getId();
+    tmp[2] = anchor->getId();
 
     return esp.send(tmp, BYTE_SZ);
 }
 
 
-bool send_ask_Distance(Server esp, Anchor anchor, uint8_t id){
+bool send_ask_Distance(Server esp, Anchor *anchor, uint8_t id){
     uint8_t tmp[BYTE_SZ] = {0};
-    tmp[0] = anchor.getId();
+    tmp[0] = anchor->getId();
     tmp[1] = ASK_DT;
     tmp[2] = id;
 

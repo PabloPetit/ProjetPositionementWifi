@@ -1,6 +1,7 @@
 #ifndef __ANCHOR_H__
 #define __ANCHOR_H__
 #include "ESP8266.h"
+#include "Avt.h"
 
 class Anchor {
     public:
@@ -8,7 +9,7 @@ class Anchor {
 
         /****SET*****/
         void set_Position(float x, float y);
-        void set_Range(float r);
+        void adjust_Range(float r);
 
         /****GET*****/
         uint8_t getId();
@@ -22,7 +23,7 @@ class Anchor {
         uint8_t id;
         float x;
         float y;
-        float last_Range;
+        Avt *range;
 
 };
 
@@ -35,26 +36,28 @@ class Mobile {
         Mobile(uint8_t id);
 
         /****SET*****/
-        void set_Position(float x, float y);
         void adjust_X(float d);
         void adjust_Y(float d);
-        void setX(float nX);
-        void setY(float nY);
-        void update_Anchor_Liste(Vector<Anchor> liste);
+
 
         /****GET*****/
         uint8_t getId();
         float getX();
         float getY();
+        Vector<Anchor*> get_chosen_Anchor(){return chosen_Anchor;};
+
+        Anchor* get_chosen_Anchor_I(int i){return chosen_Anchor[i];};
+        void trilateration();
+        void update_Anchor_Liste(Vector<Anchor*> liste);
 
 
 
     private:
         uint8_t id;
-        float x;
-        float y;
-        Vector<Anchor> all_Anchor_Liste;
-        Vector<Anchor> chosen_Anchor;
+        Avt *x;
+        Avt *y;
+        Vector<Anchor*> all_Anchor_Liste;
+        Vector<Anchor*> chosen_Anchor;
 
 
 };

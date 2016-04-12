@@ -56,7 +56,7 @@ bool recv_Ask_Node_Type(Server esp);
  * @param esp - module wifi esp8266 pour la communication
  * @return Vector<Anchor> liste des ancres
  */
-Vector<Anchor> recv_Anchor_List(Server esp);
+Vector<Anchor*> recv_Anchor_List(Server esp);
 
 
 /**
@@ -75,7 +75,7 @@ bool recv_Comfirm_Type(Server esp);
  * @param esp - module wifi esp8266 pour la communication
  * @return Ancre liste des ancres
  */
-Anchor recv_Anchor_Position(Server esp, Anchor ancre);
+void recv_Anchor_Position(Server esp, Anchor *ancre);
 
 /**
  * Récupère La position d'une ancre
@@ -83,7 +83,7 @@ Anchor recv_Anchor_Position(Server esp, Anchor ancre);
  * @param esp - module wifi esp8266 pour la communication
  * @return Ancre liste des ancres
  */
-Anchor recv_Anchor_Distance(Server esp, Anchor ancre);
+void recv_Anchor_Distance(Server esp, Anchor *ancre);
 
 
 
@@ -125,7 +125,7 @@ bool send_ask_Anchor_List(Server esp, uint8_t id);
  * @retval true - success.
  * @retval false - failure.
  */
-bool send_ask_Position(Server esp, Anchor anchor, uint8_t id);
+bool send_ask_Position(Server esp, Anchor *anchor, uint8_t id);
 
 
 
@@ -136,6 +136,6 @@ bool send_ask_Position(Server esp, Anchor anchor, uint8_t id);
  * @retval true - success.
  * @retval false - failure.
  */
-bool send_ask_Distance(Server esp, Anchor anchor, uint8_t id);
+bool send_ask_Distance(Server esp, Anchor *anchor, uint8_t id);
 
 #endif

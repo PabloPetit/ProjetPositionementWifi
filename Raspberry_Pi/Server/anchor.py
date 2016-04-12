@@ -10,6 +10,7 @@ import random
 
 id = -1
 ty = 1
+
 pos = (random.randfloat(50, 100),random.randfloat(50, 100),random.randfloat(50, 100))
 
 console_queue = Queue()
@@ -19,11 +20,34 @@ console_th = None # Thread qui gère la console
 #TODO : try catch autour des send et recv
 
 def main():
-     console_th = console()
-     socket_th = com("localhost",4002)
 
-     console_th.start()
-     socket_th.start()
+    parseArgs()
+
+    console_th = console()
+    socket_th = com("localhost",4002)
+
+    console_th.start()
+    socket_th.start()
+
+
+def parseArgs():
+    global pos
+
+    args = sys.argv
+    if len(args) == 3 :
+        try :
+            pos = (float(args[1]),float(args[2]),0)
+
+        except ValueError:
+            console_queue.put("Recuperation de la position impossible")
+
+    if len(args) > 3 :
+        try :
+            pos = (float(args[1]),float(args[2]),float(args[3]))
+
+        except ValueError:
+            console_queue.put("Recuperation de la position impossible")
+
 
 class console(Thread):
 
@@ -129,14 +153,12 @@ class com(Thread):
         elif ty == TYPES['TY_BOTH'] :
             self.sock.send(message(dest=dest,ty=TYPES['RES_TY'], msg=TYPES['TY_BOTH']).str())
 
-    def send_dist(self,dest):
-        dist = random.uniform(3, 7)
-
+    def send_dist(self,dest,):
+        dist = random.gauss(3, 7)
         self.sock.send(message(dest=dest,ty=TYPES['RES_DT'],message = dist).str())
 
     def send_pos(self,dest):
         global pos
-
         self.sock.send(message(dest=dest,ty=TYPES['RES_PS'],message = str(pos)).str())
 
     def connexion(self):

@@ -7,6 +7,8 @@ import time
 from queue import Queue
 from threading import *
 from proto import *
+from ultra import *
+from avt import *
 
 
 class RpiRunner(Thread):
@@ -14,7 +16,7 @@ class RpiRunner(Thread):
     TIMEOUT = 5
     MAX_ATTEMPS = 5
 
-    def __init__(self,ty,host,port,anchX = 5,anchY = 6,showLog = False):
+    def __init__(self,ty,host,port,anchX = 5,anchY = 6,showLog = False, ultra = False):
         Thread.__init__(self)
         self.showLog = showLog
         self.cnsQ = Queue()
@@ -28,6 +30,7 @@ class RpiRunner(Thread):
         self.th_mob = None
         self.anchX = anchX
         self.anchY = anchY
+        self.ultra = ultra
 
     def run(self):
         self.cns.start()
@@ -39,7 +42,7 @@ class RpiRunner(Thread):
                 if self.set_type() :
                     self.cnsQ.put("Envoi du type réussi")
                     if self.ty == TYPES['TY_ANCH'] or self.ty == TYPES['TY_BOTH']:
-                        self.th_anch = Anchor(self,self.anchX,self.anchY)
+                        self.th_anch = Anchor(self,self.anchX,self.anchY,ultra=self.ultra)
                         self.th_anch.start()
                     if self.ty == TYPES['TY_MOB'] :
                         self.th_mob = Mobile(self)
@@ -203,7 +206,7 @@ class Console(Thread):
 
 class Anchor(Thread):
 
-    def __init__(self,Rpi,x,y):
+    def __init__(self,Rpi,x,y,ultra = False):
         Thread.__init__(self)
         self.Rpi = Rpi
         self.ty = Rpi.ty
@@ -213,6 +216,9 @@ class Anchor(Thread):
         self.x = x
         self.y = y
         self.terminated = False
+        self.ultra = ultra
+        if self.ultra:
+            self.ultra = Ultra()
 
     def run(self):
         self.cnsQ.put("L'ancre est lancée")
@@ -220,6 +226,8 @@ class Anchor(Thread):
 
     def terminate(self):
         self.terminated = True
+        if self.ultra :
+            self.ultra.terminate()
 
     def loop(self):
         while not self.terminated :
@@ -269,6 +277,9 @@ class Anchor(Thread):
 
         dist = random.gauss(42,20)
 
+        if self.ultra :
+            dist = self.ultra.distance()
+
         mess = encode_float(dist)
 
         b = bytearray()
@@ -298,7 +309,7 @@ class Anchor(Thread):
 
 class Mobile(Thread):
 
-    MARGIN = 0.01
+    MARGIN = 0.001
     V_MIN = 0
     V_MAX = 100
     MIN_ANCH = 3
@@ -321,7 +332,7 @@ class Mobile(Thread):
         res['x'] = None
         res['y'] = None
         res['dist'] = Mobile.V_MAX
-        res['avt'] = 0
+        res['avt'] = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.MARGIN)
         return res
 
     def run(self):
@@ -339,9 +350,9 @@ class Mobile(Thread):
 
             self.ask_for_distance()
 
-            self.triangulate()
+            self.trilaterate()
 
-    def triangulate(self):
+    def trilaterate(self):
         # Faire la triangulation
         pass
 
@@ -352,7 +363,7 @@ class Mobile(Thread):
 
         self.cnsQ.put("Distance reçu de l'ancre "+str(anch['id'])+" : "+str(dist))
 
-       # self.avt(anch,dist)
+        anch['avt'].update(dist)
 
     def set_anchor_position(self,anch,msg):
         x = decode_float(msg[0:4])
@@ -479,10 +490,10 @@ class Mobile(Thread):
 
 
 
-a1 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002,showLog=True)
-a2 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002)
-a3 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002)
-a4 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002)
+a1 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002,showLog=True,anchX=0,anchY=0)
+a2 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002,anchX=50,anchY=0)
+a3 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002,anchX=0,anchY=50)
+a4 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002,anchX=0,anchY=0)
 
 
 a1.start()

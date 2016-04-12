@@ -245,10 +245,6 @@ void loop(void){
 }
 
 
-
-
-
-
 float range(){
     float rand = random(10);
     if(rand>10/2) return 10-rand;

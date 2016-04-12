@@ -1,6 +1,5 @@
 import random
 import time
-import matplotlib.pyplot as plt
 import math
 
 class Avt:
@@ -50,19 +49,19 @@ class Avt:
         self.sens = sens
 
 
-
-avt = Avt(0,100,0.0001)
+"""
+avt = avt.py(0,10,0.0001)
 v= []
 ds = []
 delta = []
 i = 0
 
 its = 400
-sigma = 10
+sigma = 4
 
 while i < its :
 
-    dist = random.gauss(42,sigma)
+    dist = random.gauss(5,sigma)
 
     #print("Distance envoyee : "+str(dist))
     avt.update(dist)
@@ -80,3 +79,4 @@ print(avt.currentVal)
 plt.plot(delta)
 #plt.ylabel('some numbers')
 plt.show()
+"""

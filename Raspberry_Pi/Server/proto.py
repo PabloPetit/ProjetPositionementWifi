@@ -21,7 +21,8 @@ TYPES['ASK_PS'] = 10 # Demande sa position à une ancre : MESS = id
 TYPES['RES_PS'] = 11 # Renvoi sa position : MESS = int+int
 TYPES['ASK_ID'] = 12 # Redemande son id
 TYPES['UNK_ID'] = 13 # Id inconnue, message non redirigé : MESS = dest
-TYPES['IM_OUT'] = 14 # Annonce une sortie du réseau
+TYPES['IM_OUT'] = 14 # Annonce une sortie du réseau TODO
+TYPES['RES_LG'] = 15 # Fichier de log MESS = CRT_X + CRT_Y + CRT_DT_1 + CRT_DT_2 + CRT_DT_3 + IT
 
 #Dans le cas des demande, l'id envoyé est celle de l'envoyeur pour que
 #le receveur sache à qui envoyer la réponse

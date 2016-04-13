@@ -7,8 +7,13 @@ import time
 from queue import Queue
 from threading import *
 from proto import *
-from ultra import *
 from avt import *
+
+try:
+    from ultra import *
+except :
+    print("Rpi.GPIO introuvable")
+
 
 
 class RpiRunner(Thread):
@@ -314,7 +319,7 @@ class Mobile(Thread):
     V_MAX = 100
     MIN_ANCH = 3
 
-    def __init__(self,Rpi,x=None,y=None):
+    def __init__(self,Rpi,x=-1,y=-1):
         Thread.__init__(self)
         self.Rpi = Rpi
         self.ty = Rpi.ty
@@ -325,6 +330,7 @@ class Mobile(Thread):
         self.y = y
         self.anch_list = {}
         self.terminated = False
+        self.it = 0
 
     def new_anch(self,id):
         res = {}
@@ -343,6 +349,29 @@ class Mobile(Thread):
     def terminate(self):
         self.terminated = True
 
+    def send_log(self):
+
+        b = bytearray()
+        b.append(TYPES['SERV_ID'])
+        b.append(TYPES['RES_LG'])
+
+
+        b.extend(encode_float(self.x))
+        b.extend(encode_float(self.y))
+
+        cmp = 0
+        for i in self.anch_list.values():
+            if cmp == Mobile.MIN_ANCH :
+                break
+            b.extend(encode_float(i['avt'].currentVal))
+            cmp += 1
+
+        b.extend(encode_float(self.it))
+
+        tmp = message(bytes=b)
+
+        self.sock.send(tmp.str())
+
     def loop(self):
         while not self.terminated :
             if len(self.anch_list) <Mobile.MIN_ANCH :
@@ -351,6 +380,10 @@ class Mobile(Thread):
             self.ask_for_distance()
 
             self.trilaterate()
+
+            self.send_log()
+
+            self.it += 1
 
     def trilaterate(self):
         # Faire la triangulation
@@ -424,7 +457,7 @@ class Mobile(Thread):
                     self.cnsQ.put("Pas de reponse") #Message a changer
             except socket.error:
                 self.cnsQ.put("Socket error (2)")
-            time.sleep(3)
+            time.sleep(1)
             cmp+=1
 
     def set_anchor_list(self):
@@ -468,8 +501,6 @@ class Mobile(Thread):
             else:
                 if ready[0]:
                     msg = message(bytes=self.sock.recv(TYPES['BYTE_SZ']))
-
-                    self.cnsQ.put("Message reçu : "+msg.toString())
 
                     if msg.ty == TYPES['RES_AL'] :
                         anch_num = int(msg.msg[0])

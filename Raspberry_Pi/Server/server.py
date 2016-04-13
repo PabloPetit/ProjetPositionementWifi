@@ -22,13 +22,13 @@ console_queue = Queue()
 @@@@@@@@@@@@@@@@@@@@@@@
 """
 
-def main():
+def main(ip="localhost",port=4002,maxQueue=5):
 
     print("Lancement du serveur ...")
 
     console_th = console()
 
-    server_th = server(4002,5)
+    server_th = server(ip,port,maxQueue)
 
     console_th.start()
     server_th.start()
@@ -43,7 +43,7 @@ def main():
 class console(Thread):
 
     global TYPES
-    TIMEOUT = 1
+    TIMEOUT = 5
 
     def __init__(self):
         Thread.__init__(self)
@@ -65,11 +65,7 @@ class console(Thread):
             if self.terminated :
                 return
             self.queueService()
-            """
-            if self.prompt:
-                print('> ',end="")
-                self.prompt = False
-            """
+
             i, o, e = select.select( [sys.stdin], [], [], console.TIMEOUT)
 
             if i :
@@ -90,6 +86,36 @@ class console(Thread):
                     print("Relance le server")
                 elif st.lower() in ["send_msg"]:
                     print("Envoi un message à un mobile")
+                elif st.lower() in ["log"]:
+                    self.log()
+
+    def log(self):
+        print("Voici la liste des mobiles connécté : ")
+        print([i.id for i in mobile_list])
+        i = input("Veuiller choisir un id : \n")
+        if not i.isdigit() :
+            print("Id inccorecte")
+            return
+        i = int(i)
+        id = [j for j in client_list if j.client.id==i]
+
+        if len(id)>0:
+            mob = id[0]
+            cmd = input("Voulez-vous : \n"
+                  "1/ Afficher le log\n"
+                  "2/ Enregistrer le log\n")
+
+            if not cmd.isdigit():
+                return
+
+            cmd = int(cmd)
+
+            if cmd == 1 :
+                print(mob.get_log())
+            elif cmd == 2 :
+                pass
+
+
 
     def quit(self, empty = True):
         self.terminated = True
@@ -107,19 +133,20 @@ class console(Thread):
 
 
 class server(Thread):
-    def __init__(self, port, maxQueue, console_queue=None):
+    def __init__(self, ip,port,maxQueue,printRtr=False):
         Thread.__init__(self)
         self.sock = None
         self.port = port
         self.maxQueue = maxQueue
-        self.console_queue = console_queue
         self.id_cnt = 2
+        self.ip = ip
+        self.printRtr = printRtr
 
     def run(self):
 
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.bind(('localhost',self.port))
+            self.sock.bind((self.ip,self.port))
             self.sock.listen(self.maxQueue)
         except socket.error:
             console_queue.put("Connexion refusée.\nLe serveur n'as pas put être lancé.")
@@ -134,7 +161,7 @@ class server(Thread):
             console_queue.put("Un nouveau client client s'est connecté : ip : "+str(info[0])+" port : "+str(info[1]))
             self.client = client(sock,info, self.id_cnt)
             self.id_cnt+=1
-            nw_client = thread_client(self.client)
+            nw_client = thread_client(self.client,printRtr=self.printRtr)
             client_list.append(nw_client)
             nw_client.start()
 
@@ -152,10 +179,12 @@ class thread_client(Thread):
     MAX_ATTEMPS = 5 #Nombre de repetition pour les communication
     TIMEOUT = 5 #Temps d'attente d'une reponse
 
-    def __init__(self, client):
+    def __init__(self, client,printRtr=False):
         Thread.__init__(self)
         self.client = client
         self.terminated = False
+        self.log = []
+        self.printRtr = printRtr
 
     def close_connexion(self, pb = True):
         global TYPES
@@ -166,9 +195,9 @@ class thread_client(Thread):
         if pb :
             console_queue.put("Probleme de connexion avec le client "+str(self.client.id))
             console_queue.put("Fermeture de la connexion ...")
+
         self.client.sock.close()
 
-        console_queue.put("Liste avant : "+str(anchor_list))
         try :
             client_list.remove(self)
             if self.client.ty == TYPES['TY_ANCH'] :
@@ -181,10 +210,6 @@ class thread_client(Thread):
         except ValueError :
             console_queue.put("Problème de remove")
             pass
-
-
-        console_queue.put("Client : "+str(self.client))
-        console_queue.put("Liste apres : "+str(anchor_list))
 
         self.terminated = True
         console_queue.put("Connection terminée avec le client : "+str(self.client.id))
@@ -268,15 +293,18 @@ class thread_client(Thread):
                     if ty == TYPES['TY_ANCH'] :
                         console_queue.put("Le client "+str(self.client.id)+" est une ancre")
                         anchor_list.append(self.client)
+                        self.client.ty = TYPES['TY_ANCH']
                         ok =  True;
                     elif ty == TYPES['TY_MOB'] :
                         console_queue.put("Le client "+str(self.client.id)+" est un mobile")
                         mobile_list.append(self.client)
+                        self.client.ty = TYPES['TY_MOB']
                         ok =  True
                     elif ty == TYPES['TY_BOTH'] :
                         console_queue.put("Le client "+str(self.client.id)+" est une ancre et un mobile")
                         anchor_list.append(self.client)
                         mobile_list.append(self.client)
+                        self.client.ty = TYPES['TY_BOTH']
                         ok =  True
                     if ok :
                         self.client.sock.send(message(dest=self.client.id, ty=TYPES['CNF_TY']).str())
@@ -304,6 +332,28 @@ class thread_client(Thread):
             self.client.sock.send(message(dest=self.client.id, ty=TYPES['RES_AL'], msg=tmp).str())
         except socket.error:
                     self.close_connexion()
+
+    def maj_log(self,msg):
+
+        try :
+            x = decode_float(msg.msg[0:4])
+            y = decode_float(msg.msg[4:8])
+            dt1 = decode_float(msg.msg[8:12])
+            dt2 = decode_float(msg.msg[12:16])
+            dt3 = decode_float(msg.msg[16:20])
+            it = decode_float(msg.msg[20:24])
+            self.log.append([(x,y,dt1,dt2,dt3,it)])
+        except :
+            console_queue.put("Log illisible : \n"+msg.toString())
+            return
+
+
+    def get_log(self):
+        st = ""
+        for i in self.log :
+            st+=str(i[0])+" "+str(i[1])+" "+str(i[2])+" "+str(i[3])+" "+str(i[4])+" "+str(i[5])+"\n"
+
+        return st
 
 
     def loop(self):
@@ -338,7 +388,7 @@ class thread_client(Thread):
                                         sent = True
                                         break
 
-                            if sent :
+                            if sent and self.printRtr:
                                 console_queue.put("Message du client "+str(self.client.id)+" à été retransmit vers le client "+str(msg.dest))
                             else:
                                 console_queue.put("Le message du client "+str(self.client.id)+" n'as pas trouvé de destinataire\n"+msg.toString())
@@ -357,6 +407,10 @@ class thread_client(Thread):
                             elif msg.ty == TYPES['ASK_AL']:
                                 console_queue.put("Demande de liste des ancres reçu du client "+str(self.client.id))
                                 self.send_anchor_list()
+                            elif msg.ty == TYPES['RES_LG']:
+                                console_queue.put("Log reçu du client "+str(self.client.id))
+                                self.maj_log(msg)
+                                console_queue.put(msg.toString())
                             else:
                                 console_queue.put("Demande incomprise du client "+str(self.client.id))
                                 console_queue.put(msg.toString())
@@ -364,6 +418,13 @@ class thread_client(Thread):
                 except socket.error:
                         self.close_connexion()
                         return
+                """
+                except TypeError:
+                        print(" [MESSAGE ENCOURAGEANT]")
+                        self.close_connexion()
+                        return
+                """
+
 
 
 

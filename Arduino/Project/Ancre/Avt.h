@@ -6,9 +6,7 @@
 #define MIN 0
 #define MAX 200
 #define TOLERENCE 0.0001
-#define DELTA_MULTI 2
-#define MIN_DELTA 0.1f
-#define MAX_DELTA 50.0f
+#define DELTA_MULTI 1.2
 
 #define UP 1
 #define DOWN -1

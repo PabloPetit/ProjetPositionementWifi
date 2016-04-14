@@ -29,11 +29,11 @@ void Avt::update(float value){
 void Avt::adjust(int direction){
     if(direction == this->last_direction){
         this->delta *= DELTA_MULTI;
-        this->delta = min(this->delta, MAX);
+        this->delta = min(this->delta, MAX_DELTA);
     }
     else {
-        this->delta /= DELTA_MULTI;
-        this->delta = max(this->delta, MIN);
+        this->delta *= (1/3);
+        this->delta = max(this->delta, MIN_DELTA);
     }
     this->last_direction = direction;
 }

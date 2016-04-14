@@ -3,71 +3,122 @@
 #include "Message.h"
 #include "Avt.h"
 
-#define SSID        "HONOR_KIW-L21_E44A"
+#define SSID            "HONOR_KIW-L21_E44A"
+#define PASSWORD        "catalina"
+
+#define SERVER_ADDR     "192.168.43.44"
+#define PORT            4002
 
 
-#define PASSWORD    "catalina"
+#define FAILURE         "FAIL"
+#define SUCCESS         "SUCCESS"
 
-#define SERVER_ADDR "192.168.43.44"
-#define PORT        4002
-#define NODE_TYPE 2
+#define NODE_TYPE       1
+#define POS_X           0.0f
+#define POS_Y           0.0f
 
-#define FAILURE "FAILURE"
-#define SUCCESS "SUCCESS"
-
-#define TEST true
+#define TEST            true
 
 
-uint8_t Self_ID;
-Mobile mobile = Mobile(4);
+uint8_t Self_ID = 1;
+Mobile mobile = Mobile(Self_ID);
 ESP8266 esp;
+
+
+
+
 int iteration = 1;
+float minX = 3000;
+float maxX = 0;
+
+float minY = 3000;
+float maxY = 0;
+
 
 Vector<Anchor> anchor_List;
+
+
+void setup(void){
+    // Init WIFI
+    Serial.begin(9600);
+    Serial1.begin(115200);
+    esp = ESP8266();
+    if(TEST)
+        test_init();
+    else {
+        bool is_connect = init_connection();
+        if(is_connect) init_Node();
+    }
+
+}
+
+void loop(void){
+  delay(2000);
+  if (iteration%50 == 0){
+      Serial.print("minX :");
+      Serial.print(minX);
+      Serial.print(" maxX :");
+      Serial.println(maxX);
+
+
+      Serial.print("minY :");
+      Serial.print(minY);
+      Serial.print(" maxY :");
+      Serial.println(maxY);
+
+      minX = 3000;
+      maxX = 0;
+
+      minY = 3000;
+      maxY = 0;
+  }
+
+  if(TEST)test_loop();
+  else real_loop();
+  //Serial.println(esp.getAPList());
+}
+
+
+
+
+
+
 
 void test_loop(){
     mobile.get_chosen_Anchor_I(0)->adjust_Range(141.42+range());
 
-    //Mise a jour dur range
+    //Mise a jour du range
     mobile.get_chosen_Anchor_I(1)->adjust_Range(100+range());
 
-    //Mise a jour dur range
+    //Mise a jour du range
     mobile.get_chosen_Anchor_I(2)->adjust_Range(100+range());
 
     Serial.print("------------------------");
     Serial.print(iteration);
     Serial.println("------------------------");
 
-    /*Serial.print("Avt range A_");
-    Serial.print(mobile.get_chosen_Anchor_I(0)->getId());
-    Serial.print(" :");
-    Serial.println(mobile.get_chosen_Anchor_I(0)->get_Range());
-
-
-    Serial.print("Avt range A_");
-    Serial.print(mobile.get_chosen_Anchor_I(1)->getId());
-    Serial.print(" :");
-    Serial.println(mobile.get_chosen_Anchor_I(1)->get_Range());
-
-
-    Serial.print("Avt range A_");
-    Serial.print(mobile.get_chosen_Anchor_I(2)->getId());
-    Serial.print(" :");
-    Serial.println(mobile.get_chosen_Anchor_I(2)->get_Range());*/
+    // Affichage du Range
     for(int i = 0; i < mobile.get_chosen_Anchor().size(); i++){
 
         Serial.print("Avt range A_");
         Serial.print(mobile.get_chosen_Anchor_I(i)->getId());
         Serial.print(" :");
-        Serial.println(mobile.get_chosen_Anchor_I(i)->get_Range());
+        Serial.print(mobile.get_chosen_Anchor_I(i)->get_Range());
+        Serial.print("\t");
     }
-
+    Serial.println();
     mobile.trilateration();
 
 
+    if (minX > mobile.getX()) minX = mobile.getX();
+    if (maxX < mobile.getX()) maxX = mobile.getX();
+
+    if (minY > mobile.getY()) minY = mobile.getY();
+    if (maxY < mobile.getY()) maxY = mobile.getY();
+
     Serial.print("X :");
-    Serial.println(mobile.getX());
-    Serial.print("Y :");
+    Serial.print(mobile.getX());
+    Serial.print(" Y :");
     Serial.println(mobile.getY());
     iteration++;
 }
@@ -116,38 +167,38 @@ void test_init(){
 
 }
 
-bool init_Client(){
+bool init_connection(){
     // connect to AP
-    Serial.print("Connect to l'AP :");
-    Serial.println(SSID);
-    if(esp.joinAP(SSID, PASSWORD)){
-        Serial.println(SUCCESS);
-    }
-    else {
-        Serial.println(FAILURE);
+    Serial.print("Connexion ....");
+
+    if(!esp.joinAP(SSID, PASSWORD)){
+        Serial.print(FAILURE);
+        Serial.print(" to connect AP : ");
+        Serial.println(SSID);
         return false;
     }
 
     // Create TCP
-    Serial.print("Connect to TCP Server :");
-    Serial.print(SERVER_ADDR);
-    Serial.print(" ");
-    Serial.println(PORT);
-    if(esp.createTCP(SERVER_ADDR, PORT)){
-        Serial.println(SUCCESS);
-    }
-    else {
+    if(!esp.createTCP(SERVER_ADDR, PORT)){
         Serial.println(FAILURE);
+        Serial.print(" to connect TCP Server :");
+        Serial.print(SERVER_ADDR);
+        Serial.print(" ");
+        Serial.println(PORT);
         return false;
     }
+    Serial.print(SUCCESS);
+    return true;
+}
 
+bool init_Node(){
     // getID
-    Serial.print("Receive Node ID : ");
+    Serial.print("Node ID : ");
     Self_ID = recv_Id(esp);
     Serial.println(Self_ID);
 
     // confirm ID
-    Serial.print("Send confirm ID : ");
+    Serial.print("ID confirm : ");
     if(send_Confirm_Id(esp)){
         Serial.println(SUCCESS);
     }
@@ -187,8 +238,6 @@ bool init_Client(){
 
         }
     }
-
-
     mobile = Mobile(Self_ID);
 
     Serial.print("send_ask_Anchor_List : ");
@@ -206,7 +255,7 @@ bool init_Client(){
 
     for (size_t i = 0; i < anchor_List.size(); i++) {
         Serial.print("send_ask_Position id ");
-        Serial.print(anchor_List[i]->getID());
+        Serial.print(anchor_List[i]->getId());
         Serial.print(" :");
         if(send_ask_Position(esp, anchor_List[i], Self_ID)){
             Serial.println(SUCCESS);
@@ -221,27 +270,9 @@ bool init_Client(){
 
     return true;
 
-}
 
 
-void setup(void){
-    // Init WIFI
-    Serial.begin(9600);
-    Serial1.begin(115200);
-    esp = ESP8266();
-    if(TEST)
-        test_init();
-    else {
-        init_Client();
-    }
 
-}
-
-void loop(void){
-  delay(500);
-  if(TEST)test_loop();
-  else real_loop();
-  //Serial.println(esp.getAPList());
 }
 
 

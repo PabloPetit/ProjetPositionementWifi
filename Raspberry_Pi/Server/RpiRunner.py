@@ -524,9 +524,9 @@ class Mobile(Thread):
 
 
 
-a1 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4002,showLog=True,anchX=0,anchY=0, dist=141.2)
-a2 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4002,anchX=100,anchY=0, dist=100)
-a3 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4002,anchX=0,anchY=100, dist=100)
+a1 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4002,showLog=True,anchX=1,anchY=2, dist=3)
+a2 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4002,anchX=4,anchY=5, dist=6)
+a3 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4002,anchX=7,anchY=8, dist=9)
 
 
 a1.start()

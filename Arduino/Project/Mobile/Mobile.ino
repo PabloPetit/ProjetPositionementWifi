@@ -83,7 +83,7 @@ void loop(void){
   }
 
   if(TEST)test_loop();
-  else real_loop();
+  //else real_loop();
   //Serial.println(esp.getAPList());
 }
 

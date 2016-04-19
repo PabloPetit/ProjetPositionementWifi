@@ -65,7 +65,7 @@ Vector<Anchor*> recv_Anchor_List(Server esp){
         i++;
     }
 
-    if (i-1 != nb_anchor){
+    if (i-2 != nb_anchor){
         DEBUG.print("\nError Nb anchre reçu ");
     }
 

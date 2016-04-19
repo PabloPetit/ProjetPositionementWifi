@@ -74,10 +74,12 @@ void recv_Anchor_Position(Server esp, Anchor *ancre){
     uint8_t b[] = {tmp[2], tmp[3], tmp[4], tmp[5]};
     memcpy(&x, &b, sizeof(x));
     float y;
-    uint8_t c[] = {tmp[2], tmp[3], tmp[4], tmp[5]};
+    uint8_t c[] = {tmp[7], tmp[8], tmp[9], tmp[10]};
     memcpy(&y, &c, sizeof(y));
-    String str = (char*)tmp;
-    DEBUG.println(str);
+    DEBUG.print("X :")
+    DEBUG.println(x);
+    DEBUG.print("Y :")
+    DEBUG.println(y);
     ancre->set_Position(x, y);
 }
 

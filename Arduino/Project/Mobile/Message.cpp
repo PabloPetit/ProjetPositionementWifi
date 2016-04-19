@@ -59,6 +59,7 @@ Vector<Anchor*> recv_Anchor_List(Server esp){
     }
     uint8_t i = 2;
     while (tmp[i] != 0) {
+        DEBUG.println(tmp[i]);
         anchor_List.push_back(new Anchor(tmp[i]));
         i++;
     }
@@ -70,14 +71,25 @@ Vector<Anchor*> recv_Anchor_List(Server esp){
 void recv_Anchor_Position(Server esp, Anchor *ancre){
     uint8_t tmp[BYTE_SZ];
     int size = esp.recv(tmp, BYTE_SZ, 2000);
+    uint8_t type_message = tmp[1];
+    if(type_message != RES_PS){
+        DEBUG.print("\ntype receive ");
+        DEBUG.println(type_message);
+        DEBUG.print("RES_PS ");
+        DEBUG.println(RES_AL);
+    }
+
+
     float x;
     uint8_t b[] = {tmp[2], tmp[3], tmp[4], tmp[5]};
     memcpy(&x, &b, sizeof(x));
     float y;
-    uint8_t c[] = {tmp[2], tmp[3], tmp[4], tmp[5]};
+    uint8_t c[] = {tmp[7], tmp[8], tmp[9], tmp[10]};
     memcpy(&y, &c, sizeof(y));
-    String str = (char*)tmp;
-    DEBUG.println(str);
+    DEBUG.print("X :");
+    DEBUG.print(x);
+    DEBUG.print(" Y :");
+    DEBUG.println(y);
     ancre->set_Position(x, y);
 }
 
@@ -138,9 +150,9 @@ bool send_ask_Anchor_List(Server esp, uint8_t id){
 
 bool send_ask_Position(Server esp, Anchor *anchor, uint8_t id){
     uint8_t tmp[BYTE_SZ] = {0};
-    tmp[0] = SERVER_ID;
+    tmp[0] = anchor->getId();
     tmp[1] = ASK_PS;
-    tmp[2] = anchor->getId();
+    tmp[2] = id;
 
     return esp.send(tmp, BYTE_SZ);
 }

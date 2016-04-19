@@ -17,7 +17,7 @@
 #define POS_X           0.0f
 #define POS_Y           0.0f
 
-#define TEST            true
+#define TEST            false
 #define MAX_ESSAI       5
 
 
@@ -54,6 +54,7 @@ void setup(void){
             bool is_connect = init_connection();
             if(is_connect) is_connect =  init_Node();
             if (is_connect) return;
+            i++;
         }
         test_init();
     }
@@ -61,8 +62,8 @@ void setup(void){
 }
 
 void loop(void){
-  delay(200);
-  if (iteration%100 == 0){
+  delay(2000);
+  if (iteration%50 == 0){
       Serial.print("minX :");
       Serial.print(minX);
       Serial.print(" maxX :");
@@ -137,7 +138,7 @@ void real_loop(){
     Serial.println("------------------------");
     for(int i = 0; i < mobile.get_chosen_Anchor().size(); i++){
         send_ask_Distance(esp, mobile.get_chosen_Anchor_I(i), Self_ID);
-        recv_Anchor_Position(esp, mobile.get_chosen_Anchor_I(i));
+        recv_Anchor_Distance(esp, mobile.get_chosen_Anchor_I(i));
 
         Serial.print("Avt range A_");
         Serial.print(mobile.get_chosen_Anchor_I(i)->getId());
@@ -272,6 +273,8 @@ bool init_Node(){
             Serial.println(FAILURE);
             return false;
         }
+        Serial.print("recv_Anchor_Position id ");
+        Serial.print(anchor_List[i]->getId());
         recv_Anchor_Position(esp, anchor_List[i]);
     }
     mobile.update_Anchor_Liste(anchor_List);
@@ -285,7 +288,7 @@ bool init_Node(){
 
 
 float range(){
-    float rand = random(3);
-    if(rand>3/2) return 3-rand;
+    float rand = random(10);
+    if(rand>10/2) return 10-rand;
     return rand;
 }

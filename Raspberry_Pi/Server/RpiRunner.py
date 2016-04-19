@@ -282,7 +282,7 @@ class Anchor(Thread):
 
     def send_dist(self,dest):
 
-        dist = random.gauss(self.dist, 20)
+        dist = random.gauss(self.dist, 5)
 
         if self.ultra :
             dist = self.ultra.distance()

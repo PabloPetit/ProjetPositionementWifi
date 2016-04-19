@@ -310,7 +310,8 @@ class Anchor(Thread):
         b.extend(Y)
 
         tmp = message(bytes=b)
-
+        console_queue.put("position :")
+        console_queue.put(tmp.str())
         self.sock.send(tmp.str())
 
 

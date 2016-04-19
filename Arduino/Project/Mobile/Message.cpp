@@ -57,12 +57,18 @@ Vector<Anchor*> recv_Anchor_List(Server esp){
         DEBUG.println(RES_AL);
         return anchor_List;
     }
-    uint8_t i = 2;
+    uint8_t nb_anchor = tmp[2];
+    uint8_t i = 3;
     while (tmp[i] != 0) {
         DEBUG.println(tmp[i]);
         anchor_List.push_back(new Anchor(tmp[i]));
         i++;
     }
+
+    if (i-1 != nb_anchor){
+        DEBUG.print("\nError Nb anchre reçu ");
+    }
+
     return anchor_List;
 }
 

@@ -428,4 +428,4 @@ class thread_client(Thread):
 
 
 
-main()
+main(ip="192.168.43.44",port=4002)

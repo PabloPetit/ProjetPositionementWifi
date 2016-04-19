@@ -21,7 +21,7 @@ class RpiRunner(Thread):
     TIMEOUT = 5
     MAX_ATTEMPS = 5
 
-    def __init__(self,ty,host,port,anchX = 5,anchY = 6,showLog = False, ultra = False):
+    def __init__(self,ty,host,port,anchX = 5,anchY = 6,showLog = False, ultra = False, dist=42):
         Thread.__init__(self)
         self.showLog = showLog
         self.cnsQ = Queue()
@@ -36,6 +36,7 @@ class RpiRunner(Thread):
         self.anchX = anchX
         self.anchY = anchY
         self.ultra = ultra
+        self.dist=dist
 
     def run(self):
         self.cns.start()
@@ -47,7 +48,7 @@ class RpiRunner(Thread):
                 if self.set_type() :
                     self.cnsQ.put("Envoi du type réussi")
                     if self.ty == TYPES['TY_ANCH'] or self.ty == TYPES['TY_BOTH']:
-                        self.th_anch = Anchor(self,self.anchX,self.anchY,ultra=self.ultra)
+                        self.th_anch = Anchor(self,self.anchX,self.anchY,ultra=self.ultra, dist=self.dist)
                         self.th_anch.start()
                     if self.ty == TYPES['TY_MOB'] :
                         self.th_mob = Mobile(self)
@@ -211,7 +212,7 @@ class Console(Thread):
 
 class Anchor(Thread):
 
-    def __init__(self,Rpi,x,y,ultra = False):
+    def __init__(self,Rpi,x,y,ultra = False, dist=42):
         Thread.__init__(self)
         self.Rpi = Rpi
         self.ty = Rpi.ty
@@ -222,6 +223,7 @@ class Anchor(Thread):
         self.y = y
         self.terminated = False
         self.ultra = ultra
+        self.dist = dist
         if self.ultra:
             self.ultra = Ultra()
 
@@ -280,7 +282,7 @@ class Anchor(Thread):
 
     def send_dist(self,dest):
 
-        dist = random.gauss(42,20)
+        dist = random.gauss(self.dist, 20)
 
         if self.ultra :
             dist = self.ultra.distance()
@@ -521,17 +523,16 @@ class Mobile(Thread):
 
 
 
-a1 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002,showLog=True,anchX=0,anchY=0)
-a2 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002,anchX=50,anchY=0)
-a3 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002,anchX=0,anchY=50)
-a4 = RpiRunner(TYPES['TY_ANCH'],'localhost',4002,anchX=0,anchY=0)
+a1 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4002,showLog=True,anchX=0,anchY=0, dist=141.2)
+a2 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4002,anchX=100,anchY=0, dist=100)
+a3 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4002,anchX=0,anchY=100, dist=100)
 
 
 a1.start()
 a2.start()
 a3.start()
-a4.start()
+#a4.start()
 
 
-rpi = RpiRunner(TYPES['TY_MOB'],'localhost',4002, showLog=True)
-rpi.start()
+#rpi = RpiRunner(TYPES['TY_MOB'],'localhost',4002, showLog=True)
+#rpi.start()

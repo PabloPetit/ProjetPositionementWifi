@@ -13,11 +13,12 @@
 #define FAILURE         "FAIL"
 #define SUCCESS         "SUCCESS"
 
-#define NODE_TYPE       1
+#define NODE_TYPE       2
 #define POS_X           0.0f
 #define POS_Y           0.0f
 
 #define TEST            true
+#define MAX_ESSAI       5
 
 
 uint8_t Self_ID = 1;
@@ -43,18 +44,25 @@ void setup(void){
     Serial.begin(9600);
     Serial1.begin(115200);
     esp = ESP8266();
-    if(TEST)
+    if(TEST){
         test_init();
+
+    }
     else {
-        bool is_connect = init_connection();
-        if(is_connect) init_Node();
+        int i = 0;
+        while(i < MAX_ESSAI){
+            bool is_connect = init_connection();
+            if(is_connect) is_connect =  init_Node();
+            if (is_connect) return;
+        }
+        test_init();
     }
 
 }
 
 void loop(void){
-  delay(2000);
-  if (iteration%50 == 0){
+  delay(200);
+  if (iteration%100 == 0){
       Serial.print("minX :");
       Serial.print(minX);
       Serial.print(" maxX :");
@@ -277,7 +285,7 @@ bool init_Node(){
 
 
 float range(){
-    float rand = random(10);
-    if(rand>10/2) return 10-rand;
+    float rand = random(3);
+    if(rand>3/2) return 3-rand;
     return rand;
 }

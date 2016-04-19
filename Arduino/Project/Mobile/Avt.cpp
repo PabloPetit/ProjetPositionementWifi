@@ -32,7 +32,7 @@ void Avt::adjust(int direction){
         this->delta = min(this->delta, MAX_DELTA);
     }
     else {
-        this->delta *= (1/3);
+        this->delta /= 3.0f;
         this->delta = max(this->delta, MIN_DELTA);
     }
     this->last_direction = direction;

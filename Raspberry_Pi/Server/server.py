@@ -296,7 +296,7 @@ class thread_client(Thread):
                         self.client.ty = TYPES['TY_ANCH']
                         ok =  True;
                         console_queue.put("liste des ancres")
-                        console_queue.put(anchor_list)
+                        console_queue.put(str(anchor_list))
                     elif ty == TYPES['TY_MOB'] :
                         console_queue.put("Le client "+str(self.client.id)+" est un mobile")
                         mobile_list.append(self.client)

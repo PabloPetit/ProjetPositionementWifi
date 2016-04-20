@@ -373,7 +373,7 @@ class thread_client(Thread):
                     if ready[0] :
                         msg = message(bytes=bytearray(self.client.sock.recv(TYPES['BYTE_SZ'])))
                         if msg.dest == 0:
-                            pass
+                            continue;
                         if msg.dest > TYPES['SERV_ID'] :
                             sent = False
                             for mob in mobile_list :

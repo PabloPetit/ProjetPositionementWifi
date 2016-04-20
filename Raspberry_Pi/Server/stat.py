@@ -25,5 +25,6 @@ for l in lines:
     R3 += [float(ll[4])]
     IT += [float(ll[5])]
 
-plt.scatter(Y, X, s=100, c=couleur[0][c], marker=".")
+plt.plot(IT, X, 'r-')
+#plt.plot(R2)
 plt.show()

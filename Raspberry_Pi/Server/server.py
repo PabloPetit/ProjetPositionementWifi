@@ -113,7 +113,9 @@ class console(Thread):
             if cmd == 1 :
                 print(mob.get_log())
             elif cmd == 2 :
-                pass
+               	fichier = open("./log", "w")
+                fichier.write(mob.get_log())
+                fichier.close()
 
 
 
@@ -133,7 +135,7 @@ class console(Thread):
 
 
 class server(Thread):
-    def __init__(self, ip,port,maxQueue,printRtr=False):
+    def __init__(self, ip,port,maxQueue,printRtr=True):
         Thread.__init__(self)
         self.sock = None
         self.port = port
@@ -342,7 +344,7 @@ class thread_client(Thread):
             dt2 = decode_float(msg.msg[12:16])
             dt3 = decode_float(msg.msg[16:20])
             it = decode_float(msg.msg[20:24])
-            self.log.append([(x, y, dt1, dt2, dt3, it)])
+            self.log.append((x,y,dt1,dt2,dt3,it))
         except :
             console_queue.put("Log illisible : \n"+msg.toString())
             return
@@ -429,4 +431,4 @@ class thread_client(Thread):
 
 
 
-main(ip="192.168.43.44",port=4002)
+main(ip="192.168.43.44",port=4000)

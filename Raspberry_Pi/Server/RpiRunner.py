@@ -212,7 +212,7 @@ class Console(Thread):
 
 class Anchor(Thread):
 
-    def __init__(self,Rpi,x,y,ultra = False, dist=42):
+    def __init__(self,Rpi,x,y,ultra = False, dist=None):
         Thread.__init__(self)
         self.Rpi = Rpi
         self.ty = Rpi.ty
@@ -282,10 +282,11 @@ class Anchor(Thread):
 
     def send_dist(self,dest):
 
-        dist = random.gauss(self.dist, 5)
+        #dist = random.gauss(self.dist, 5)
 
         if self.ultra :
             dist = self.ultra.distance()
+        self.cnsQ.put("dist calcule" + str(dist))
 
         mess = encode_float(dist)
 
@@ -522,14 +523,14 @@ class Mobile(Thread):
 
 
 
-a1 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4002,showLog=True,anchX=float(1),anchY=float(2), dist=float(3))
-a2 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4002,anchX=float(4),anchY=float(5), dist=float(6))
-a3 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4002,anchX=float(7),anchY=float(8), dist=float(9))
+a1 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4002,showLog=True,anchX=float(0),anchY=float(50), ultra=True)
+a2 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4002,anchX=float(0),anchY=float(0), dist=float(7071))
+#a3 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4002,anchX=float(7),anchY=float(8), dist=float(9))
 
 
 a1.start()
 a2.start()
-a3.start()
+#a3.start()
 #a4.start()
 
 

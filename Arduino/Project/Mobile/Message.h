@@ -26,7 +26,9 @@
 #define ASK_PS  10       // Demande sa position à une ancre : MESS = id
 #define RES_PS  11       // Renvoi sa position : MESS = int+int
 #define ASK_ID  12       // Redemande son id
-#define UNK_ID  13       //Id inconnue, message non redirigé : MESS = dest
+#define UNK_ID  13       // Id inconnue, message non redirigé : MESS = dest
+#define IM_OUT  14       // Annonce une sortie du réseau TODO
+#define RES_LG  15       // Fichier de log MESS = CRT_X + CRT_Y + CRT_DT_1 + CRT_DT_2 + CRT_DT_3 + IT
 
 
 // ENVOI
@@ -137,5 +139,8 @@ bool send_ask_Position(Server esp, Anchor *anchor, uint8_t id);
  * @retval false - failure.
  */
 bool send_ask_Distance(Server esp, Anchor *anchor, uint8_t id);
+
+
+bool send_Log(Server esp, Mobile mobile, int iteration);
 
 #endif

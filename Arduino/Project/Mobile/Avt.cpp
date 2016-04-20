@@ -11,12 +11,12 @@ void Avt::update(float value){
     this->iteration++;
     float error = this->current_Val - value;
 
-    if(error > 0){
+    if(error > TOLERENCE){
         this->adjust(UP);
         this->current_Val = max(MIN, this->current_Val - this->delta);
         return;
     }
-    if(error < 0){
+    if(error < -TOLERENCE){
         this->adjust(DOWN);
         this->current_Val = min(MAX, this->current_Val + this->delta);
         return;
@@ -27,15 +27,19 @@ void Avt::update(float value){
 }
 
 void Avt::adjust(int direction){
-    if(direction == this->last_direction){
+    if(direction == this->last_direction && direction != EQUAL){
         this->delta *= DELTA_MULTI;
         this->delta = min(this->delta, MAX_DELTA);
     }
     else {
-        this->delta /= 3.0f;
+        this->delta /= DELTA_DIV;
         this->delta = max(this->delta, MIN_DELTA);
     }
     this->last_direction = direction;
+}
+
+int Avt::get_lastDir(){
+    return this->last_direction;
 }
 
 Avt::Avt(){

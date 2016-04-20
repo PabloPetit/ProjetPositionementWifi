@@ -148,8 +148,13 @@ void real_loop(){
     mobile.trilateration();
     Serial.print("X :");
     Serial.println(mobile.getX());
+    //Serial.print(" : -> ");
+    //Serial.println(mobile.getXDir());
     Serial.print("Y :");
     Serial.println(mobile.getY());
+    //Serial.print(" : -> ");
+    //Serial.println(mobile.getYDir());
+    send_Log(esp, mobile, iteration);
     iteration++;
 }
 

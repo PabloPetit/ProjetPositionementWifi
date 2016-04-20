@@ -342,7 +342,7 @@ class thread_client(Thread):
             dt2 = decode_float(msg.msg[12:16])
             dt3 = decode_float(msg.msg[16:20])
             it = decode_float(msg.msg[20:24])
-            self.log.append([(x,y,dt1,dt2,dt3,it)])
+            self.log.append([(x, y, dt1, dt2, dt3, it)])
         except :
             console_queue.put("Log illisible : \n"+msg.toString())
             return

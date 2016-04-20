@@ -172,3 +172,48 @@ bool send_ask_Distance(Server esp, Anchor *anchor, uint8_t id){
 
     return esp.send(tmp, BYTE_SZ);
 }
+
+bool send_Log(Server esp, Mobile mobile, int iteration){
+    uint8_t tmp[BYTE_SZ] = {0};
+    tmp[0] = SERVER_ID;
+    tmp[1] = RES_LG;
+    uint8_t x_array[4];
+    *((float *)x_array) = mobile.getX();
+    tmp[2] = x_array[0];
+    tmp[3] = x_array[1];
+    tmp[4] = x_array[2];
+    tmp[5] = x_array[3];
+
+    *((float *)x_array) = mobile.getY();
+    tmp[6] = x_array[0];
+    tmp[7] = x_array[1];
+    tmp[8] = x_array[2];
+    tmp[9] = x_array[3];
+
+    *((float *)x_array) = mobile.get_chosen_Anchor_I(0)->get_Range();
+    tmp[10] = x_array[0];
+    tmp[11] = x_array[1];
+    tmp[12] = x_array[2];
+    tmp[13] = x_array[3];
+
+    *((float *)x_array) = mobile.get_chosen_Anchor_I(1)->get_Range();
+    tmp[14] = x_array[0];
+    tmp[15] = x_array[1];
+    tmp[16] = x_array[2];
+    tmp[17] = x_array[3];
+
+
+    *((float *)x_array) = mobile.get_chosen_Anchor_I(2)->get_Range();
+    tmp[18] = x_array[0];
+    tmp[19] = x_array[1];
+    tmp[20] = x_array[2];
+    tmp[21] = x_array[3];
+
+    *((float *)x_array) = (float) iteration;
+    tmp[22] = x_array[0];
+    tmp[23] = x_array[1];
+    tmp[24] = x_array[2];
+    tmp[25] = x_array[3];
+
+    return esp.send(tmp, BYTE_SZ);
+}

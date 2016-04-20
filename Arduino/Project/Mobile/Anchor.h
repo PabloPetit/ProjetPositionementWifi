@@ -44,6 +44,8 @@ class Mobile {
         uint8_t getId();
         float getX();
         float getY();
+        int getXDir(){return this->x->get_lastDir();};
+        int getYDir(){return this->y->get_lastDir();};
         Vector<Anchor*> get_chosen_Anchor(){return chosen_Anchor;};
 
         Anchor* get_chosen_Anchor_I(int i){return chosen_Anchor[i];};

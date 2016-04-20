@@ -179,7 +179,7 @@ class thread_client(Thread):
     MAX_ATTEMPS = 5 #Nombre de repetition pour les communication
     TIMEOUT = 5 #Temps d'attente d'une reponse
 
-    def __init__(self, client,printRtr=False):
+    def __init__(self, client,printRtr=True):
         Thread.__init__(self)
         self.client = client
         self.terminated = False

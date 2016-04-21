@@ -25,6 +25,18 @@ for l in lines:
     R3 += [float(ll[4])]
     IT += [float(ll[5])]
 
-plt.plot(IT, X, 'r-')
+#plt.plot(IT, R1, 'r-')#plt.plot(IT, R1, 'r-')
+
+
+
+
+
+
+
+
+plt.plot(IT, R2, 'b-')
+plt.plot(IT, R3, 'g-')
+#plt.plot(X, Y, 'r--')
+#plt.plot(X, Y, 'b.')
 #plt.plot(R2)
 plt.show()

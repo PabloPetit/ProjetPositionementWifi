@@ -7,7 +7,7 @@
 #define PASSWORD        "catalina"
 
 #define SERVER_ADDR     "192.168.43.44"
-#define PORT            4002
+#define PORT            4000
 
 
 #define FAILURE         "FAIL"

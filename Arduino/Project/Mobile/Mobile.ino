@@ -62,7 +62,7 @@ void setup(void){
 }
 
 void loop(void){
-  delay(2000);
+  delay(700);
   if (iteration%50 == 0){
       Serial.print("minX :");
       Serial.print(minX);

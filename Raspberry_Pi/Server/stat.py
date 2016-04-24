@@ -34,9 +34,9 @@ for l in lines:
 
 
 
-plt.plot(IT, R2, 'b-')
-plt.plot(IT, R3, 'g-')
-#plt.plot(X, Y, 'r--')
-#plt.plot(X, Y, 'b.')
+#plt.plot(IT, R2, 'b-')
+#plt.plot(IT, R3, 'g-')
+plt.plot(X, Y, 'r--')
+plt.plot(X, Y, 'b.')
 #plt.plot(R2)
 plt.show()

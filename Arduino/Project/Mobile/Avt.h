@@ -5,11 +5,11 @@
 
 #define MIN         0
 #define MAX         200
-#define TOLERENCE   0.1f
+#define TOLERENCE   0.3f
 #define DELTA_MULTI 2.0f
 #define DELTA_DIV   3.0f
 #define MIN_DELTA   0.1f
-#define MAX_DELTA   5.0f
+#define MAX_DELTA   50.0f
 
 #define UP          1
 #define DOWN        -1

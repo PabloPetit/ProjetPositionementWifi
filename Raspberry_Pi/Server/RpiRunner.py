@@ -8,6 +8,7 @@ from queue import Queue
 from threading import *
 from proto import *
 from avt import *
+from math import *
 
 try:
     from ultra import *
@@ -330,6 +331,8 @@ class Mobile(Thread):
         self.cnsQ = Rpi.cnsQ
         self.x = x
         self.y = y
+        self.avtX = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.MARGIN)
+        self.avtY = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.MARGIN)
         self.anch_list = {}
         self.terminated = False
         self.it = 0
@@ -388,8 +391,54 @@ class Mobile(Thread):
             self.it += 1
 
     def trilaterate(self):
-        # Faire la triangulation
-        pass
+        cmp = 0
+        anchs = []
+        for i in self.anch_list.values():
+            if cmp == Mobile.MIN_ANCH :
+                break
+            anchs.append(i)
+
+        A = anchs[0]
+        B = anchs[1]
+        C = anchs[2]
+
+        xA = A['x']
+        yA = A['y']
+        dA = A['avt'].currentVal
+        xB = B['x']
+        yB = B['y']
+        dB = B['avt'].currentVal
+        xC = C['x']
+        yC = C['y']
+        dC = C['avt'].currentVal
+
+        d = sqrt(pow(xB-xA,2)+pow(yB-yA,2))
+
+        ex = []
+        ex [0] = (xB - xA) / d
+        ex [1] = (yB - yA) / d
+
+        i = ex[0]*(xC - xA) + ex[1]*(yC - yA)
+
+        ey = []
+
+        ey[0] = (xC-xA-i*ex[0])/sqrt(pow(xC-xA-i*ex[0],2) + pow(yC-yA-i*ex[1],2))
+        ey[1] = (yC-yA-i*ex[1])/sqrt(pow(xC-xA-i*ex[0],2) + pow(yC-yA-i*ex[1],2))
+
+        j = ey[0] * (xC-xA) + ey[1]*(yC-yA)
+
+
+        x = ( dA*dA - dB*dB + d*d ) / (2*d)
+        y = (dA*dA - dC*dC + i*i + j*j)/(2*j) - i*x/j;
+
+
+        resX = xA+ x*ex[0] + y*ey[0]
+        resY = xA+ x*ex[1] + y*ey[1]
+
+        self.avtX.update(resX)
+        self.avtY.update(resY)
+        self.x = self.avtX.currentVal
+        self.y = self.avtY.currentVal
 
 
     def maj_anch(self,anch,msg):
@@ -524,7 +573,7 @@ class Mobile(Thread):
 
 
 a1 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4000, showLog=True,anchX=float(0),anchY=float(50), ultra=True)
-a2 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4000, anchX=float(0),anchY=float(0), dist=float(70.71f))
+a2 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4000, anchX=float(0),anchY=float(0), dist=float(70.71))
 #a3 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4002,anchX=float(7),anchY=float(8), dist=float(9))
 
 

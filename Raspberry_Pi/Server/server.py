@@ -69,6 +69,8 @@ class console(Thread):
             i, o, e = select.select( [sys.stdin], [], [], console.TIMEOUT)
 
             if i :
+
+                #TODO : supprimer ou implementer les options vides
                 st = sys.stdin.readline().strip()
                 if st.lower() in ["exit","quit"]:
                     self.quit()
@@ -421,12 +423,7 @@ class thread_client(Thread):
                 except socket.error:
                         self.close_connexion()
                         return
-                """
-                except TypeError:
-                        print(" [MESSAGE ENCOURAGEANT]")
-                        self.close_connexion()
-                        return
-                """
+
 
 
 

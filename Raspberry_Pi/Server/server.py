@@ -448,6 +448,9 @@ class thread_client(Thread):
                             elif msg.ty == TYPES['RES_LG']:
                                 console_queue.put("Log reçu du client "+str(self.client.id))
                                 self.maj_log(msg)
+                            elif msg.ty == TYPES['IM_OUT']:
+                                console_queue.put("Le client "+str(self.client.id)+" annoce sa sortie du réseaux")
+                                self.close_connexion()
                                 #console_queue.put(msg.toString())
                             else:
                                 console_queue.put("Demande incomprise du client "+str(self.client.id))
@@ -461,6 +464,6 @@ class thread_client(Thread):
 
 
 
-main(ip="localhost",port=4003)
+main(ip="192.168.43.7",port=4003)
 
 

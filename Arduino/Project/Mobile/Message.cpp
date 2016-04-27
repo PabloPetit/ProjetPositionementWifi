@@ -58,15 +58,20 @@ Vector<Anchor*> recv_Anchor_List(Server esp){
         return anchor_List;
     }
     uint8_t nb_anchor = tmp[2];
+    DEBUG.print("Nombre d'ancre :");
+    DEBUG.println(nb_anchor);
     uint8_t i = 3;
     while (tmp[i] != 0) {
         DEBUG.println(tmp[i]);
         anchor_List.push_back(new Anchor(tmp[i]));
         i++;
     }
-
-    if (i-2 != nb_anchor){
-        DEBUG.print("\nError Nb anchre reçu ");
+    if (i-3 != nb_anchor){
+        DEBUG.println("Erreur sur ne nombre d'ancre recu :");
+        DEBUG.print("Attendu ");
+        DEBUG.println(nb_anchor);
+        DEBUG.print("Recu ");
+        DEBUG.println(i-3);
     }
 
     return anchor_List;
@@ -74,7 +79,7 @@ Vector<Anchor*> recv_Anchor_List(Server esp){
 
 
 
-void recv_Anchor_Position(Server esp, Anchor *ancre){
+int recv_Anchor_Position(Server esp, Anchor *ancre){
     uint8_t tmp[BYTE_SZ];
     int size = esp.recv(tmp, BYTE_SZ, 2000);
     uint8_t type_message = tmp[1];
@@ -82,7 +87,8 @@ void recv_Anchor_Position(Server esp, Anchor *ancre){
         DEBUG.print("\ntype receive ");
         DEBUG.println(type_message);
         DEBUG.print("RES_PS ");
-        DEBUG.println(RES_AL);
+        DEBUG.println(RES_PS);
+        return -1;
     }
 
 
@@ -97,11 +103,22 @@ void recv_Anchor_Position(Server esp, Anchor *ancre){
     DEBUG.print(" Y :");
     DEBUG.println(y);
     ancre->set_Position(x, y);
+    return 1;
 }
 
-void recv_Anchor_Distance(Server esp, Anchor *ancre){
+float recv_Anchor_Distance(Server esp, Anchor *ancre){
     uint8_t tmp[BYTE_SZ];
     int size = esp.recv(tmp, BYTE_SZ, 2000);
+    uint8_t type_message = tmp[1];
+    if(type_message != RES_DT){
+        DEBUG.print("\ntype receive ");
+        DEBUG.println(type_message);
+        DEBUG.print("RES_DT ");
+        DEBUG.println(RES_DT);
+        return -1.0f;
+    }
+
+
     float f;
     uint8_t b[] = {tmp[2], tmp[3], tmp[4], tmp[5]};
     memcpy(&f, &b, sizeof(f));
@@ -110,6 +127,7 @@ void recv_Anchor_Distance(Server esp, Anchor *ancre){
     DEBUG.print(" = ");
     DEBUG.println(f);
     ancre->adjust_Range(f);
+    return f;
 }
 
 
@@ -173,7 +191,7 @@ bool send_ask_Distance(Server esp, Anchor *anchor, uint8_t id){
     return esp.send(tmp, BYTE_SZ);
 }
 
-bool send_Log(Server esp, Mobile mobile, int iteration){
+bool send_Log(Server esp, Mobile mobile, int iteration, float d1, float d2, float d3){
     uint8_t tmp[BYTE_SZ] = {0};
     tmp[0] = SERVER_ID;
     tmp[1] = RES_LG;
@@ -196,24 +214,41 @@ bool send_Log(Server esp, Mobile mobile, int iteration){
     tmp[12] = x_array[2];
     tmp[13] = x_array[3];
 
-    *((float *)x_array) = mobile.get_chosen_Anchor_I(1)->get_Range();
+    *((float *)x_array) = d1;
     tmp[14] = x_array[0];
     tmp[15] = x_array[1];
     tmp[16] = x_array[2];
     tmp[17] = x_array[3];
 
-
-    *((float *)x_array) = mobile.get_chosen_Anchor_I(2)->get_Range();
+    *((float *)x_array) = mobile.get_chosen_Anchor_I(1)->get_Range();
     tmp[18] = x_array[0];
     tmp[19] = x_array[1];
     tmp[20] = x_array[2];
     tmp[21] = x_array[3];
 
-    *((float *)x_array) = (float) iteration;
+    *((float *)x_array) = d2;
     tmp[22] = x_array[0];
     tmp[23] = x_array[1];
     tmp[24] = x_array[2];
     tmp[25] = x_array[3];
+
+    *((float *)x_array) = mobile.get_chosen_Anchor_I(2)->get_Range();
+    tmp[26] = x_array[0];
+    tmp[27] = x_array[1];
+    tmp[28] = x_array[2];
+    tmp[29] = x_array[3];
+
+    *((float *)x_array) = d3;
+    tmp[30] = x_array[0];
+    tmp[31] = x_array[1];
+    tmp[32] = x_array[2];
+    tmp[33] = x_array[3];
+
+    *((float *)x_array) = (float) iteration;
+    tmp[34] = x_array[0];
+    tmp[35] = x_array[1];
+    tmp[36] = x_array[2];
+    tmp[37] = x_array[3];
 
     return esp.send(tmp, BYTE_SZ);
 }
@@ -255,5 +290,13 @@ bool send_Distance(Server esp, float d, uint8_t id){
     tmp[3] = d_array[1];
     tmp[4] = d_array[2];
     tmp[5] = d_array[3];
+    return esp.send(tmp, BYTE_SZ);
+}
+
+
+bool send_IMOUT(Server esp, uint8_t id){
+    uint8_t tmp[BYTE_SZ] = {0};
+    tmp[0] = id;
+    tmp[1] = IM_OUT;
     return esp.send(tmp, BYTE_SZ);
 }

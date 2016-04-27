@@ -12,6 +12,18 @@ int iteration = 1;
 Vector<Anchor> anchor_List;
 bool cnftype = false;
 bool setup_OK = false;
+float distances[3] = {0.0f,0.0f,0.0f};
+
+
+bool init_connection();
+bool config_Node();
+bool init_Node();
+void l_Ancre();
+void l_Mobile();
+float get_Distance();
+Vector<Anchor*> get_anchor_list();
+
+
 
 
 void setup(void){
@@ -34,8 +46,8 @@ void setup(void){
 }
 
 void loop(void){
-    if(NODE_TYPE == ANCRE) loop_Ancre();
-    else loop_mobile();
+    if(NODE_TYPE == ANCRE) l_Ancre();
+    else l_Mobile();
 }
 
 bool init_connection(){
@@ -124,15 +136,15 @@ bool init_Node(){
     Vector<Anchor*> anchor_List;
     do{
         anchor_List = get_anchor_list();
-    while(anchor_List.size() < 3);
-
+        if(anchor_List.size()< 3)delay(DELAI);
+    }while(anchor_List.size() < 3);
 
     mobile.update_Anchor_Liste(anchor_List);
 
     return true;
 }
 
-void loop_Ancre(){
+void l_Ancre(){
     uint8_t tmp[BYTE_SZ];
     int size = esp.recv(tmp, BYTE_SZ, 2000);
 
@@ -157,7 +169,7 @@ void loop_Ancre(){
     }
 }
 
-void loop_mobile(){
+void l_Mobile(){
     // delai entre les itération de l'algo
     delay(DELAI);
     LOG_PRINT("------------------------");
@@ -167,7 +179,12 @@ void loop_mobile(){
     for(int i = 0; i < mobile.get_chosen_Anchor().size(); i++){
 
         send_ask_Distance(esp, mobile.get_chosen_Anchor_I(i), Self_ID);
-        recv_Anchor_Distance(esp, mobile.get_chosen_Anchor_I(i));
+        distances[i] =  recv_Anchor_Distance(esp, mobile.get_chosen_Anchor_I(i));
+
+        if(distances[i] < 0){
+            LOG_PRINT("Ask distance : ");
+            LOG_PRINTLN(FAILURE);
+        }
 
 
         LOG_PRINT("Avt range A_");
@@ -175,7 +192,6 @@ void loop_mobile(){
         LOG_PRINT(" :");
         LOG_PRINTLN(mobile.get_chosen_Anchor_I(i)->get_Range());
     }
-
 
 
     mobile.trilateration();
@@ -189,7 +205,7 @@ void loop_mobile(){
     /**
      *Envoi du log au serveur
      */
-    send_Log(esp, mobile, iteration);
+    send_Log(esp, mobile, iteration, distances[0], distances[1], distances[2]);
     iteration++;
 }
 
@@ -235,7 +251,10 @@ Vector<Anchor*> get_anchor_list(){
             LOG_PRINT("recv_Anchor_Position id ");
             LOG_PRINT(anchor_List[i]->getId());
 
-            recv_Anchor_Position(esp, anchor_List[i]);
+            if(recv_Anchor_Position(esp, anchor_List[i]) < 1 ){
+                LOG_PRINTLN(FAILURE);
+                return anchor_List;
+            }
         }
         return anchor_List;
 }

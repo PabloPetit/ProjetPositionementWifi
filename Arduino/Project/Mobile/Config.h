@@ -10,8 +10,8 @@
 
 #define SSID            "HONOR_KIW-L21_E44A"
 #define PASSWORD        "catalina"
-#define SERVER_ADDR     "192.168.43.44"
-#define PORT            4000
+#define SERVER_ADDR     "192.168.43.7"
+#define PORT            4009
 #define FAILURE         "FAIL"
 #define SUCCESS         "SUCCESS"
 
@@ -37,6 +37,9 @@
 #define LOG_PRINT(arg)\
     if (MODE_DEBUG)\
         Serial.print(arg);
+
+
+
 
 
 #endif

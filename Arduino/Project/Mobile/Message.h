@@ -8,10 +8,10 @@
 #define Server ESP8266
 
 #define SERVER_ID 1
-#define MSG_SZ 32
-#define MSG_LN 30
+#define MSG_SZ 64
+#define MSG_LN 62
 
-#define BYTE_SZ 65
+#define BYTE_SZ 64
 
 
 #define SET_ID  1        // Donne son id à un noeud : MESS = id
@@ -74,7 +74,7 @@ bool recv_Comfirm_Type(Server esp);
  * @param esp - module wifi esp8266 pour la communication
  * @return
  */
-void recv_Anchor_Position(Server esp, Anchor *ancre);
+int recv_Anchor_Position(Server esp, Anchor *ancre);
 
 /**
  * Récupère La distance d'une ancre
@@ -82,7 +82,7 @@ void recv_Anchor_Position(Server esp, Anchor *ancre);
  * @param esp - module wifi esp8266 pour la communication
  * @return
  */
-void recv_Anchor_Distance(Server esp, Anchor *ancre);
+float recv_Anchor_Distance(Server esp, Anchor *ancre);
 
 
 
@@ -154,7 +154,7 @@ bool send_ask_Distance(Server esp, Anchor *anchor, uint8_t id);
  * @retval true - success.
  * @retval false - failure.
  */
-bool send_Log(Server esp, Mobile mobile, int iteration);
+bool send_Log(Server esp, Mobile mobile, int iteration, float d1, float d2, float d3);
 
 
 /**
@@ -178,5 +178,15 @@ bool send_Position(Server esp, float x, float y, uint8_t id);
  * @retval false - failure.
  */
 bool send_Distance(Server esp, float d, uint8_t id);
+
+
+/**
+ * Envoi au serveur une notification de sortie du reseau
+ *
+ * @param esp - module wifi esp8266 pour la communication
+ * @retval true - success.
+ * @retval false - failure.
+ */
+bool send_IMOUT(Server esp, uint8_t id);
 
 #endif

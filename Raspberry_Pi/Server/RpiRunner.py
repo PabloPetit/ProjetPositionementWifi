@@ -314,9 +314,10 @@ class Anchor(Thread):
 
 class Mobile(Thread):
 
-    MARGIN = 0.001
-    V_MIN = 0
-    V_MAX = 150
+
+    MARGIN = TYPES['TOL']
+    V_MIN = TYPES['MIN']
+    V_MAX = TYPES['MAX']
     MIN_ANCH = 3
 
     IT_TIME = 0.2
@@ -339,8 +340,8 @@ class Mobile(Thread):
     def new_anch(self,id):
         res = {}
         res['id'] = int(id)
-        res['x'] = None
-        res['y'] = None
+        res['x'] = 0
+        res['y'] = 0
         res['dist'] = Mobile.V_MAX
         res['avt'] = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.MARGIN)
         res['last'] = -1
@@ -385,7 +386,7 @@ class Mobile(Thread):
 
             self.ask_for_distance()
 
-            self.trilaterate()
+            # self.trilaterate()
 
             self.send_log()
 
@@ -414,6 +415,7 @@ class Mobile(Thread):
         dC = C['avt'].currentVal
 
         d = sqrt(pow(xB-xA,2)+pow(yB-yA,2))
+
 
         ex = [0]*2
         ex[0] = (xB - xA) / d
@@ -462,28 +464,33 @@ class Mobile(Thread):
 
     def ask_position(self,anch):
         global TYPES
-        try:
-            msg = message(dest=anch['id'],ty=TYPES['ASK_PS'],msg=int(self.id))
-            self.sock.send(msg.str())
-            ready = select.select([self.sock],[],[],RpiRunner.TIMEOUT)
-            if ready[0] :
-                try :
-                    msg = message(bytes=self.sock.recv(TYPES['BYTE_SZ']))
-                    if msg.ty == TYPES['RES_PS']:
-                        self.set_anchor_position(anch,msg.msg)
-                        return True
-                    else :
-                        self.cnsQ.put("Message érroné : (2)\n"+msg.toString())
+        cmp = 0
+        while cmp < 5 : # BARBARE
+
+            try:
+                msg = message(dest=anch['id'],ty=TYPES['ASK_PS'],msg=int(self.id))
+                self.sock.send(msg.str())
+                ready = select.select([self.sock],[],[],RpiRunner.TIMEOUT)
+                if ready[0] :
+                    try :
+                        msg = message(bytes=self.sock.recv(TYPES['BYTE_SZ']))
+                        if msg.ty == TYPES['RES_PS']:
+                            self.set_anchor_position(anch,msg.msg)
+                            return True
+                        else :
+                            self.cnsQ.put("Message érroné : (2)\n"+msg.toString())
+                            return False
+                    except socket.error :
+                        self.cnsQ.put("Socket error (3)")
                         return False
-                except socket.error :
-                    self.cnsQ.put("Socket error (3)")
-                    return False
-            else:
-                self.cnsQ.put("Pas de reponse") #Message a changer
-        except socket.error:
-            self.cnsQ.put("Socket error (2)")
-            return False
-        return True
+                else:
+                    self.cnsQ.put("Pas de reponse") #Message a changer
+            except socket.error:
+                self.cnsQ.put("Socket error (2)")
+                return False
+            cmp+=1
+
+        return False
 
 
     def ask_for_distance(self):
@@ -574,18 +581,17 @@ class Mobile(Thread):
         return True
 
 
+ip="192.168.43.7"
+port=4009
 
-port = 4003
-ip = "localhost"
-
-a1 = RpiRunner(TYPES['TY_ANCH'],ip,port,anchX=float(0),anchY=float(0), dist = 142.42)
-a2 = RpiRunner(TYPES['TY_ANCH'],ip,port, anchX=float(0),anchY=float(100), dist=float(100))
-a3 = RpiRunner(TYPES['TY_ANCH'],ip,port,anchX=float(100),anchY=float(0), dist=float(100))
+#a1 = RpiRunner(TYPES['TY_ANCH'],ip,port,anchX=float(0),anchY=float(0), ultra = True)
+#a2 = RpiRunner(TYPES['TY_ANCH'],ip,port, anchX=float(0),anchY=float(100), dist=float(100))
+#a3 = RpiRunner(TYPES['TY_ANCH'],ip,port,anchX=float(100),anchY=float(0), dist=float(100))
 
 
-a1.start()
-a2.start()
-a3.start()
+#a1.start()
+#a2.start()
+#a3.start()
 #a4.start()
 
 

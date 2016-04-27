@@ -10,7 +10,7 @@ uint8_t recv_Id(Server esp){
         DEBUG.println(type_message);
         DEBUG.print("SET_ID ");
         DEBUG.println(SET_ID);
-        return -1;
+        return 0; // ne correspond pas à un id possible
     }
     uint8_t id_Node = tmp[2];
     return id_Node;
@@ -215,5 +215,45 @@ bool send_Log(Server esp, Mobile mobile, int iteration){
     tmp[24] = x_array[2];
     tmp[25] = x_array[3];
 
+    return esp.send(tmp, BYTE_SZ);
+}
+
+
+
+bool send_Position(Server esp, float x, float y, uint8_t id){
+    uint8_t tmp[BYTE_SZ] = {0};
+    tmp[0] = id;
+    tmp[1] = RES_PS;
+    uint8_t x_array[4];
+    *((float *)x_array) = x;
+
+    uint8_t y_array[4];
+    *((float *)y_array) = y;
+
+    tmp[2] = x_array[0];
+    tmp[3] = x_array[1];
+    tmp[4] = x_array[2];
+    tmp[5] = x_array[3];
+
+    tmp[6] = x_array[0];
+    tmp[7] = x_array[1];
+    tmp[8] = x_array[2];
+    tmp[9] = x_array[3];
+    return esp.send(tmp, BYTE_SZ);
+
+}
+
+bool send_Distance(Server esp, float d, uint8_t id){
+    uint8_t tmp[BYTE_SZ] = {0};
+    tmp[0] = id;
+    tmp[1] = RES_DT;
+    uint8_t d_array[4];
+    *((float *)d_array) = d;
+
+
+    tmp[2] = d_array[0];
+    tmp[3] = d_array[1];
+    tmp[4] = d_array[2];
+    tmp[5] = d_array[3];
     return esp.send(tmp, BYTE_SZ);
 }

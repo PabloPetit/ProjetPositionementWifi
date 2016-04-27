@@ -2,298 +2,240 @@
 #include "Arduino.h"
 #include "Message.h"
 #include "Avt.h"
-
-#define SSID            "HONOR_KIW-L21_E44A"
-#define PASSWORD        "catalina"
-
-#define SERVER_ADDR     "192.168.43.44"
-#define PORT            4000
+#include "Config.h"
 
 
-#define FAILURE         "FAIL"
-#define SUCCESS         "SUCCESS"
-
-#define NODE_TYPE       2
-#define POS_X           0.0f
-#define POS_Y           0.0f
-
-#define TEST            false
-#define MAX_ESSAI       5
-
-
-uint8_t Self_ID = 1;
+uint8_t Self_ID = 0;
 Mobile mobile = Mobile(Self_ID);
 ESP8266 esp;
-
-
-
-
 int iteration = 1;
-float minX = 3000;
-float maxX = 0;
-
-float minY = 3000;
-float maxY = 0;
-
-
 Vector<Anchor> anchor_List;
+bool cnftype = false;
+bool setup_OK = false;
 
 
 void setup(void){
-    // Init WIFI
+    // Init Serial port & ESP
     Serial.begin(9600);
     Serial1.begin(115200);
     esp = ESP8266();
-    if(TEST){
-        test_init();
+    pinMode(trigPin, OUTPUT);
+    pinMode(echoPin, INPUT);
 
-    }
-    else {
-        int i = 0;
-        while(i < MAX_ESSAI){
-            bool is_connect = init_connection();
-            if(is_connect) is_connect =  init_Node();
-            if (is_connect) return;
-            i++;
-        }
-        test_init();
+
+    int i = 0;
+    while(i < MAX_ESSAI){
+        bool is_connect = init_connection();
+        if(is_connect) is_connect =  init_Node();
+        if (is_connect) return;
+        i++;
     }
 
 }
 
 void loop(void){
-  delay(700);
-  if (iteration%50 == 0){
-      Serial.print("minX :");
-      Serial.print(minX);
-      Serial.print(" maxX :");
-      Serial.println(maxX);
-
-
-      Serial.print("minY :");
-      Serial.print(minY);
-      Serial.print(" maxY :");
-      Serial.println(maxY);
-
-      minX = 3000;
-      maxX = 0;
-
-      minY = 3000;
-      maxY = 0;
-  }
-
-  if(TEST)test_loop();
-  else real_loop();
-  //Serial.println(esp.getAPList());
-}
-
-
-
-
-
-
-
-void test_loop(){
-    mobile.get_chosen_Anchor_I(0)->adjust_Range(141.42+range());
-
-    //Mise a jour du range
-    mobile.get_chosen_Anchor_I(1)->adjust_Range(100+range());
-
-    //Mise a jour du range
-    mobile.get_chosen_Anchor_I(2)->adjust_Range(100+range());
-
-    Serial.print("------------------------");
-    Serial.print(iteration);
-    Serial.println("------------------------");
-
-    // Affichage du Range
-    for(int i = 0; i < mobile.get_chosen_Anchor().size(); i++){
-
-        Serial.print("Avt range A_");
-        Serial.print(mobile.get_chosen_Anchor_I(i)->getId());
-        Serial.print(" :");
-        Serial.print(mobile.get_chosen_Anchor_I(i)->get_Range());
-        Serial.print("\t");
-    }
-    Serial.println();
-    mobile.trilateration();
-
-
-    if (minX > mobile.getX()) minX = mobile.getX();
-    if (maxX < mobile.getX()) maxX = mobile.getX();
-
-    if (minY > mobile.getY()) minY = mobile.getY();
-    if (maxY < mobile.getY()) maxY = mobile.getY();
-
-    Serial.print("X :");
-    Serial.print(mobile.getX());
-    Serial.print(" Y :");
-    Serial.println(mobile.getY());
-    iteration++;
-}
-
-void real_loop(){
-    Serial.print("------------------------");
-    Serial.print(iteration);
-    Serial.println("------------------------");
-    for(int i = 0; i < mobile.get_chosen_Anchor().size(); i++){
-        send_ask_Distance(esp, mobile.get_chosen_Anchor_I(i), Self_ID);
-        recv_Anchor_Distance(esp, mobile.get_chosen_Anchor_I(i));
-
-        Serial.print("Avt range A_");
-        Serial.print(mobile.get_chosen_Anchor_I(i)->getId());
-        Serial.print(" :");
-        Serial.println(mobile.get_chosen_Anchor_I(i)->get_Range());
-    }
-    mobile.trilateration();
-    Serial.print("X :");
-    Serial.println(mobile.getX());
-    //Serial.print(" : -> ");
-    //Serial.println(mobile.getXDir());
-    Serial.print("Y :");
-    Serial.println(mobile.getY());
-    //Serial.print(" : -> ");
-    //Serial.println(mobile.getYDir());
-    send_Log(esp, mobile, iteration);
-    iteration++;
-}
-
-void test_init(){
-    Vector<Anchor*> anchor_List;
-
-    anchor_List.push_back(new Anchor(1));
-    anchor_List[0]->set_Position(0.0, 0.0);
-    anchor_List[0]->adjust_Range(141.42);
-    Serial.println(anchor_List[0]->get_Range());
-
-    anchor_List.push_back(new Anchor(2));
-    anchor_List[1]->set_Position(0.0, 100.0);
-    anchor_List[1]->adjust_Range(100.0);
-
-    anchor_List.push_back(new Anchor(3));
-    anchor_List[2]->set_Position(100.0, 0.0);
-    anchor_List[2]->adjust_Range(100.0);
-
-    mobile = Mobile(4);
-    mobile.update_Anchor_Liste(anchor_List);
-
-    randomSeed(analogRead(0));
-
+    if(NODE_TYPE == ANCRE) loop_Ancre();
+    else loop_mobile();
 }
 
 bool init_connection(){
     // connect to AP
-    Serial.print("Connexion ....");
+    LOG_PRINT("Connexion ....");
 
     if(!esp.joinAP(SSID, PASSWORD)){
-        Serial.print(FAILURE);
-        Serial.print(" to connect AP : ");
-        Serial.println(SSID);
+        LOG_PRINT(FAILURE);
+        LOG_PRINT(" to connect AP : ");
+        LOG_PRINTLN(SSID);
         return false;
     }
 
     // Create TCP
     if(!esp.createTCP(SERVER_ADDR, PORT)){
-        Serial.println(FAILURE);
-        Serial.print(" to connect TCP Server :");
-        Serial.print(SERVER_ADDR);
-        Serial.print(" ");
-        Serial.println(PORT);
+        LOG_PRINTLN(FAILURE);
+        LOG_PRINT(" to connect TCP Server :");
+        LOG_PRINT(SERVER_ADDR);
+        LOG_PRINT(" ");
+        LOG_PRINTLN(PORT);
         return false;
     }
-    Serial.print(SUCCESS);
+    LOG_PRINT(SUCCESS);
     return true;
 }
 
-bool init_Node(){
+bool config_Node(){
     // getID
-    Serial.print("Node ID : ");
+    LOG_PRINT("Node ID : ");
     Self_ID = recv_Id(esp);
-    Serial.println(Self_ID);
+    LOG_PRINTLN(Self_ID);
 
     // confirm ID
-    Serial.print("ID confirm : ");
+    LOG_PRINT("ID confirm : ");
     if(send_Confirm_Id(esp)){
-        Serial.println(SUCCESS);
+        LOG_PRINTLN(SUCCESS);
     }
     else {
-        Serial.println(FAILURE);
+        LOG_PRINTLN(FAILURE);
         return false;
     }
 
     // recoi demande type node
-    Serial.print("Receive ask Node Type : ");
+    LOG_PRINT("Receive ask Node Type : ");
     if(recv_Ask_Node_Type(esp)){
-        Serial.println(SUCCESS);
+        LOG_PRINTLN(SUCCESS);
     }
     else {
-        Serial.println(FAILURE);
+        LOG_PRINTLN(FAILURE);
         return false;
     }
 
     // Envoi type node
-    Serial.print("Send Node type : ");
+    LOG_PRINT("Send Node type : ");
     if(send_Type_Node(esp, NODE_TYPE)){
-        Serial.println(SUCCESS);
+        LOG_PRINTLN(SUCCESS);
     }
     else {
-        Serial.println(FAILURE);
+        LOG_PRINTLN(FAILURE);
         return false;
     }
 
-    Serial.print("recv Confirm Node type : ");
+    LOG_PRINT("recv Confirm Node type : ");
     while(true){
         if(recv_Comfirm_Type(esp)){
-            Serial.println(SUCCESS);
+            LOG_PRINTLN(SUCCESS);
             break;
         }
         else {
-            Serial.println(FAILURE);
+            LOG_PRINTLN(FAILURE);
 
         }
     }
+}
+
+bool init_Node(){
+    bool config = config_Node();
+    if(!config) return false;
+
+    // si on est une ancre la configuration est terminé
+    if(NODE_TYPE == ANCRE) return true;
+
+
     mobile = Mobile(Self_ID);
 
-    Serial.print("send_ask_Anchor_List : ");
-    if(send_ask_Anchor_List(esp, Self_ID)){
-        Serial.println(SUCCESS);
-    }
-    else {
-        Serial.println(FAILURE);
-        return false;
-    }
-
     Vector<Anchor*> anchor_List;
+    do{
+        anchor_List = get_anchor_list();
+    while(anchor_List.size() < 3);
 
-    anchor_List = recv_Anchor_List(esp);
 
-    for (size_t i = 0; i < anchor_List.size(); i++) {
-        Serial.print("send_ask_Position id ");
-        Serial.print(anchor_List[i]->getId());
-        Serial.print(" :");
-        if(send_ask_Position(esp, anchor_List[i], Self_ID)){
-            Serial.println(SUCCESS);
-        }
-        else {
-            Serial.println(FAILURE);
-            return false;
-        }
-        Serial.print("recv_Anchor_Position id ");
-        Serial.print(anchor_List[i]->getId());
-        recv_Anchor_Position(esp, anchor_List[i]);
-    }
     mobile.update_Anchor_Liste(anchor_List);
 
     return true;
-
-
-
-
 }
 
+void loop_Ancre(){
+    uint8_t tmp[BYTE_SZ];
+    int size = esp.recv(tmp, BYTE_SZ, 2000);
 
-float range(){
-    float rand = random(10);
-    if(rand>10/2) return 10-rand;
-    return rand;
+    if(size < MSG_SZ) return;
+    uint8_t id = tmp[2];
+    uint8_t code = tmp[1];
+
+    switch (code) {
+        case ASK_TY://ok
+            send_Type_Node(esp, NODE_TYPE);
+            break;
+        case CNF_TY: // ok
+            if(recv_Comfirm_Type(esp))
+                cnftype = true;
+            break;
+        case ASK_DT:
+            send_Distance(esp, get_Distance(), id);
+            break;
+        case ASK_PS:
+            send_Position(esp, POS_X, POS_Y, id);
+            break;
+    }
+}
+
+void loop_mobile(){
+    // delai entre les itération de l'algo
+    delay(DELAI);
+    LOG_PRINT("------------------------");
+    LOG_PRINT(iteration);
+    LOG_PRINTLN("------------------------");
+
+    for(int i = 0; i < mobile.get_chosen_Anchor().size(); i++){
+
+        send_ask_Distance(esp, mobile.get_chosen_Anchor_I(i), Self_ID);
+        recv_Anchor_Distance(esp, mobile.get_chosen_Anchor_I(i));
+
+
+        LOG_PRINT("Avt range A_");
+        LOG_PRINT(mobile.get_chosen_Anchor_I(i)->getId());
+        LOG_PRINT(" :");
+        LOG_PRINTLN(mobile.get_chosen_Anchor_I(i)->get_Range());
+    }
+
+
+
+    mobile.trilateration();
+
+
+    LOG_PRINT("X :");
+    LOG_PRINTLN(mobile.getX());
+    LOG_PRINT("Y :");
+    LOG_PRINTLN(mobile.getY());
+
+    /**
+     *Envoi du log au serveur
+     */
+    send_Log(esp, mobile, iteration);
+    iteration++;
+}
+
+// TODO : Test
+float get_Distance(){
+
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin, LOW);
+    float t = pulseIn(echoPin, HIGH);
+    return t/2.0f/29.0f;
+}
+
+Vector<Anchor*> get_anchor_list(){
+        Vector<Anchor*> anchor_List;
+        LOG_PRINT("send_ask_Anchor_List : ");
+        if(send_ask_Anchor_List(esp, Self_ID)){
+            LOG_PRINTLN(SUCCESS);
+        }
+        else {
+            LOG_PRINTLN(FAILURE);
+            return anchor_List;
+        }
+
+
+
+        anchor_List = recv_Anchor_List(esp);
+
+        for (size_t i = 0; i < anchor_List.size(); i++) {
+            LOG_PRINT("send_ask_Position id ");
+            LOG_PRINT(anchor_List[i]->getId());
+            LOG_PRINT(" :");
+
+            if(send_ask_Position(esp, anchor_List[i], Self_ID)){
+                LOG_PRINTLN(SUCCESS);
+            }
+            else {
+                LOG_PRINTLN(FAILURE);
+                return anchor_List;
+            }
+            LOG_PRINT("recv_Anchor_Position id ");
+            LOG_PRINT(anchor_List[i]->getId());
+
+            recv_Anchor_Position(esp, anchor_List[i]);
+        }
+        return anchor_List;
 }

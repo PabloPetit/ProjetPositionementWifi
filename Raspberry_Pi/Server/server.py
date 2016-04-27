@@ -511,7 +511,7 @@ helpMsg = "Options : \n" \
           "    -mxQ <max queue>"
 
 
-ip = "localhost"
+ip = "192.168.43.7"
 port = 4000
 mxQ = 5
 rtr = False

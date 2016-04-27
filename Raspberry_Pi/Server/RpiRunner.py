@@ -6,6 +6,7 @@ from proto import *
 from avt import *
 from math import *
 import sys
+import random
 
 try:
     from ultra import *
@@ -167,7 +168,7 @@ class RpiRunner(Thread):
         return False
 
     def connexion(self):
-        self.cnsQ.put("Lancement du server...")
+        self.cnsQ.put("Connexion en cours ...")
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.connect((self.host, self.port))
@@ -624,7 +625,6 @@ try :
     opt = sys.argv
 
     for i in range(len(opt)):
-
 
         if opt[i] in ["-ip"] :
             ip = opt[i+1]

@@ -14,7 +14,6 @@ class Avt:
         self.delta = maxi
         self.it = 0
         self.sens = 0 # -1 0 ou 1
-        self.itMSens = 0
 
 
     def update(self,val):
@@ -35,14 +34,12 @@ class Avt:
     def adjust(self,sens):
 
         if sens == self.sens :
-            self.itMSens += 1
-            self.delta *= Avt.DELTA_MULTI
+            self.delta *= 2
             if self.delta > self.maxi :
                 self.delta = self.maxi
 
         else:
-            self.itMSens -= 1
-            self.delta /= Avt.DELTA_MULTI
+            self.delta *= 1/3.0
             if self.delta < self.mini :
                 self.delta = self.mini
 

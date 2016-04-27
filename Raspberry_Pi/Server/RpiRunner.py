@@ -1,13 +1,11 @@
 import socket
 import select
-import sys
-import random
-import struct
-import time
 from queue import Queue
 from threading import *
 from proto import *
 from avt import *
+from math import *
+import sys
 
 try:
     from ultra import *
@@ -282,7 +280,7 @@ class Anchor(Thread):
 
     def send_dist(self,dest):
 
-        #dist = random.gauss(self.dist, 5)
+        dist = random.gauss(self.dist, 5)
 
         if self.ultra :
             dist = self.ultra.distance()
@@ -318,8 +316,10 @@ class Mobile(Thread):
 
     MARGIN = 0.001
     V_MIN = 0
-    V_MAX = 100
+    V_MAX = 150
     MIN_ANCH = 3
+
+    IT_TIME = 0.2
 
     def __init__(self,Rpi,x=-1,y=-1):
         Thread.__init__(self)
@@ -330,6 +330,8 @@ class Mobile(Thread):
         self.cnsQ = Rpi.cnsQ
         self.x = x
         self.y = y
+        self.avtX = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.MARGIN)
+        self.avtY = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.MARGIN)
         self.anch_list = {}
         self.terminated = False
         self.it = 0
@@ -341,6 +343,7 @@ class Mobile(Thread):
         res['y'] = None
         res['dist'] = Mobile.V_MAX
         res['avt'] = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.MARGIN)
+        res['last'] = -1
         return res
 
     def run(self):
@@ -366,6 +369,7 @@ class Mobile(Thread):
             if cmp == Mobile.MIN_ANCH :
                 break
             b.extend(encode_float(i['avt'].currentVal))
+            b.extend(encode_float(i['last']))
             cmp += 1
 
         b.extend(encode_float(self.it))
@@ -388,8 +392,54 @@ class Mobile(Thread):
             self.it += 1
 
     def trilaterate(self):
-        # Faire la triangulation
-        pass
+        cmp = 0
+        anchs = []
+        for i in self.anch_list.values():
+            if cmp == Mobile.MIN_ANCH :
+                break
+            anchs.append(i)
+
+        A = anchs[0]
+        B = anchs[1]
+        C = anchs[2]
+
+        xA = A['x']
+        yA = A['y']
+        dA = A['avt'].currentVal
+        xB = B['x']
+        yB = B['y']
+        dB = B['avt'].currentVal
+        xC = C['x']
+        yC = C['y']
+        dC = C['avt'].currentVal
+
+        d = sqrt(pow(xB-xA,2)+pow(yB-yA,2))
+
+        ex = [0]*2
+        ex[0] = (xB - xA) / d
+        ex[1] = (yB - yA) / d
+
+        i = ex[0]*(xC - xA) + ex[1]*(yC - yA)
+
+        ey = [0]*2
+
+        ey[0] = (xC-xA-i*ex[0])/sqrt(pow(xC-xA-i*ex[0],2) + pow(yC-yA-i*ex[1],2))
+        ey[1] = (yC-yA-i*ex[1])/sqrt(pow(xC-xA-i*ex[0],2) + pow(yC-yA-i*ex[1],2))
+
+        j = ey[0] * (xC-xA) + ey[1]*(yC-yA)
+
+
+        x = ( dA*dA - dB*dB + d*d ) / (2*d)
+        y = (dA*dA - dC*dC + i*i + j*j)/(2*j) - i*x/j;
+
+
+        resX = xA+ x*ex[0] + y*ey[0]
+        resY = xA+ x*ex[1] + y*ey[1]
+
+        self.avtX.update(resX)
+        self.avtY.update(resY)
+        self.x = self.avtX.currentVal
+        self.y = self.avtY.currentVal
 
 
     def maj_anch(self,anch,msg):
@@ -397,6 +447,8 @@ class Mobile(Thread):
         dist = decode_float(msg[0:4])
 
         self.cnsQ.put("Distance reçu de l'ancre "+str(anch['id'])+" : "+str(dist))
+
+        anch['last'] = dist
 
         anch['avt'].update(dist)
 
@@ -459,7 +511,7 @@ class Mobile(Thread):
                     self.cnsQ.put("Pas de reponse") #Message a changer
             except socket.error:
                 self.cnsQ.put("Socket error (2)")
-            time.sleep(1)
+            time.sleep(Mobile.IT_TIME)
             cmp+=1
 
     def set_anchor_list(self):
@@ -481,7 +533,7 @@ class Mobile(Thread):
                     tmp.append(self.anch_list[i])
 
             self.anch_list = {key: value for key, value in self.anch_list.items() if value not in tmp}
-            time.sleep(3)
+            time.sleep(Mobile.IT_TIME)
 
 
     def find_anchors(self):
@@ -523,16 +575,19 @@ class Mobile(Thread):
 
 
 
-a1 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4000, showLog=True,anchX=float(0),anchY=float(50), ultra=True)
-a2 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4000, anchX=float(0),anchY=float(0), dist=float(70.71f))
-#a3 = RpiRunner(TYPES['TY_ANCH'],'192.168.43.44',4002,anchX=float(7),anchY=float(8), dist=float(9))
+port = 4003
+ip = "localhost"
+
+a1 = RpiRunner(TYPES['TY_ANCH'],ip,port,anchX=float(0),anchY=float(0), dist = 142.42)
+a2 = RpiRunner(TYPES['TY_ANCH'],ip,port, anchX=float(0),anchY=float(100), dist=float(100))
+a3 = RpiRunner(TYPES['TY_ANCH'],ip,port,anchX=float(100),anchY=float(0), dist=float(100))
 
 
 a1.start()
 a2.start()
-#a3.start()
+a3.start()
 #a4.start()
 
 
-#rpi = RpiRunner(TYPES['TY_MOB'],'localhost',4002, showLog=True)
-#rpi.start()
+rpi = RpiRunner(TYPES['TY_MOB'],ip,port, showLog=True)
+rpi.start()

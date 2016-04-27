@@ -3,8 +3,8 @@ import struct
 
 TYPES = {}
 
-TYPES['MSG_SZ'] = 32
-TYPES['MSG_LN'] = 30
+TYPES['MSG_SZ'] = 64
+TYPES['MSG_LN'] = 62 # Si ça merde c'est a cause de celui la !
 
 TYPES['SERV_ID'] = 1
 
@@ -22,7 +22,7 @@ TYPES['RES_PS'] = 11 # Renvoi sa position : MESS = int+int
 TYPES['ASK_ID'] = 12 # Redemande son id
 TYPES['UNK_ID'] = 13 # Id inconnue, message non redirigé : MESS = dest
 TYPES['IM_OUT'] = 14 # Annonce une sortie du réseau TODO
-TYPES['RES_LG'] = 15 # Fichier de log MESS = CRT_X + CRT_Y + CRT_DT_1 + CRT_DT_2 + CRT_DT_3 + IT
+TYPES['RES_LG'] = 15 # Fichier de log MESS = CRT_X + CRT_Y + CRT_DT_1 + SIGN_1 + CRT_DT_2 + SIGN_2 + CRT_DT_3 + SIGN 3 + IT
 
 #Dans le cas des demande, l'id envoyé est celle de l'envoyeur pour que
 #le receveur sache à qui envoyer la réponse
@@ -32,7 +32,7 @@ TYPES['TY_ANCH'] = 1
 TYPES['TY_MOB'] = 2
 TYPES['TY_BOTH'] = 3
 
-TYPES['BYTE_SZ'] = 32 #taille du message : 65 apres encode (), 81 sans : pour 32 char
+TYPES['BYTE_SZ'] = 64 #taille du message : 65 apres encode (), 81 sans : pour 32 char
 
 
 def encode_float(f):

@@ -3,7 +3,10 @@ import select
 from queue import Queue
 from threading import *
 from proto import *
+from time import *
 import sys
+
+
 
 
 server_id = TYPES['SERV_ID'] #Le server à toujours pour id 1
@@ -15,6 +18,8 @@ server_th = None # Thread qui gère le server
 console_th = None # Thread qui gère la console
 
 console_queue = Queue()
+
+terminated = False
 
 """
 @@@@@@@@@@@@@@@@@@@@@@@
@@ -28,10 +33,15 @@ def main(ip="localhost",port=4002,maxQueue=5):
 
     console_th = console()
 
-    server_th = server(ip,port,maxQueue)
+    server_th = server(ip,port,maxQueue,printRtr=False)
 
     console_th.start()
     server_th.start()
+
+    console_th.join()
+    server_th.join()
+
+    print("Fin du programme")
 
 
 """
@@ -48,8 +58,6 @@ class console(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.queue = console_queue
-        self.terminated = False
-        self.prompt = True
 
     def queueService(self):
         while not self.queue.empty():
@@ -58,19 +66,17 @@ class console(Thread):
                 self.quit()
                 return
             print(tmp)
-            self.prompt = True
 
     def run(self):
+        global terminated
+        sleep(0.5)
         while(True):
-            if self.terminated :
+            if terminated :
                 return
             self.queueService()
-
+            #print("> ",end="")
             i, o, e = select.select( [sys.stdin], [], [], console.TIMEOUT)
-
-            if i :
-
-                #TODO : supprimer ou implementer les options vides
+            if i and not terminated: # Test
                 st = sys.stdin.readline().strip()
                 if st.lower() in ["exit","quit"]:
                     self.quit()
@@ -90,6 +96,9 @@ class console(Thread):
                     print("Envoi un message à un mobile")
                 elif st.lower() in ["log"]:
                     self.log()
+                else:
+                    print("Commande inconnue")
+
 
     def log(self):
         print("Voici la liste des mobiles connécté : ")
@@ -115,14 +124,24 @@ class console(Thread):
             if cmd == 1 :
                 print(mob.get_log())
             elif cmd == 2 :
-               	fichier = open("./log", "w")
-                fichier.write(mob.get_log())
-                fichier.close()
+
+                cmd = input("Entrez le nom du fichier : \n> ")
+                try :
+               	    fichier = open(cmd, "w")
+                    fichier.write(mob.get_log())
+                    fichier.close()
+                except:
+                    print("Ouverture impossible, abandon")
+                    pass
+                pass
+        else:
+            print("Identifiant incorrect")
 
 
 
     def quit(self, empty = True):
-        self.terminated = True
+        global terminated
+        terminated = True
         print("La console a été coupée")
         if empty :
             print("Vidage de la file console :")
@@ -137,6 +156,9 @@ class console(Thread):
 
 
 class server(Thread):
+
+    TIMEOUT = 2
+
     def __init__(self, ip,port,maxQueue,printRtr=True):
         Thread.__init__(self)
         self.sock = None
@@ -145,9 +167,10 @@ class server(Thread):
         self.id_cnt = 2
         self.ip = ip
         self.printRtr = printRtr
+        socket.setdefaulttimeout(server.TIMEOUT)
 
     def run(self):
-
+        global terminated
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.bind((self.ip,self.port))
@@ -160,14 +183,19 @@ class server(Thread):
 
         console_queue.put("Le server est en ligne. IP = "+str(self.sock.getsockname()[0])+" Port  = "+str(self.sock.getsockname()[1]))
 
-        while(True):
-            sock,info = self.sock.accept()
+        while not terminated:
+            try :
+                sock,info = self.sock.accept()
+            except :
+                continue
             console_queue.put("Un nouveau client client s'est connecté : ip : "+str(info[0])+" port : "+str(info[1]))
             self.client = client(sock,info, self.id_cnt)
             self.id_cnt+=1
             nw_client = thread_client(self.client,printRtr=self.printRtr)
             client_list.append(nw_client)
             nw_client.start()
+
+        print("Le Serveur n'est plus en ligne")
 
 
 
@@ -343,10 +371,13 @@ class thread_client(Thread):
             x = decode_float(msg.msg[0:4])
             y = decode_float(msg.msg[4:8])
             dt1 = decode_float(msg.msg[8:12])
-            dt2 = decode_float(msg.msg[12:16])
-            dt3 = decode_float(msg.msg[16:20])
-            it = decode_float(msg.msg[20:24])
-            self.log.append((x,y,dt1,dt2,dt3,it))
+            sg1 = decode_float(msg.msg[12:16])
+            dt2 = decode_float(msg.msg[16:20])
+            sg2 = decode_float(msg.msg[20:24])
+            dt3 = decode_float(msg.msg[24:28])
+            sg3 = decode_float(msg.msg[28:32])
+            it = decode_float(msg.msg[32:36])
+            self.log.append((x,y,dt1,sg1,dt2,sg2,dt3,sg3,it))
         except :
             console_queue.put("Log illisible : \n"+msg.toString())
             return
@@ -355,7 +386,7 @@ class thread_client(Thread):
     def get_log(self):
         st = ""
         for i in self.log :
-            st+=str(i[0])+" "+str(i[1])+" "+str(i[2])+" "+str(i[3])+" "+str(i[4])+" "+str(i[5])+"\n"
+            st+=str(i[0])+" "+str(i[1])+" "+str(i[2])+" "+str(i[3])+" "+str(i[4])+" "+str(i[5])+" "+str(i[6])+" "+str(i[7])+" "+str(i[8])+"\n"
 
         return st
 
@@ -364,8 +395,9 @@ class thread_client(Thread):
         global mobile_list
         global anchor_list
         global TYPES
+        global terminated
         #Boucle de communication
-        while not self.terminated:
+        while not self.terminated and not terminated:
             ready = None
             try:
                 ready = select.select([self.client.sock],[], [], thread_client.TIMEOUT)
@@ -393,8 +425,9 @@ class thread_client(Thread):
                                         sent = True
                                         break
 
-                            if sent and self.printRtr:
-                                console_queue.put("Message du client "+str(self.client.id)+" à été retransmit vers le client "+str(msg.dest))
+                            if sent :
+                                if self.printRtr :
+                                    console_queue.put("Message du client "+str(self.client.id)+" à été retransmit vers le client "+str(msg.dest))
                             else:
                                 console_queue.put("Le message du client "+str(self.client.id)+" n'as pas trouvé de destinataire\n"+msg.toString())
                                 try:
@@ -415,7 +448,7 @@ class thread_client(Thread):
                             elif msg.ty == TYPES['RES_LG']:
                                 console_queue.put("Log reçu du client "+str(self.client.id))
                                 self.maj_log(msg)
-                                console_queue.put(msg.toString())
+                                #console_queue.put(msg.toString())
                             else:
                                 console_queue.put("Demande incomprise du client "+str(self.client.id))
                                 console_queue.put(msg.toString())
@@ -428,4 +461,6 @@ class thread_client(Thread):
 
 
 
-main(ip="192.168.43.44",port=4000)
+main(ip="localhost",port=4003)
+
+

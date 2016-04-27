@@ -1,3 +1,4 @@
+import getopt
 import socket
 import select
 from queue import Queue
@@ -35,6 +36,20 @@ class RpiRunner(Thread):
         self.anchY = anchY
         self.ultra = ultra
         self.dist=dist
+
+        global TYPES
+
+        if self.showLog :
+
+            if self.ty == TYPES['TY_ANCH'] :
+                print("L'ancre est lancée")
+
+            print("Addresse : "+str(self.host))
+            print("Port : "+str(self.port))
+            print("X = "+str(self.anchX))
+            print("Y = "+str(self.anchY))
+            print("Ultra : "+str(self.ultra))
+            print("Dist : "+str(self.dist))
 
     def run(self):
         self.cns.start()
@@ -581,19 +596,81 @@ class Mobile(Thread):
         return True
 
 
-ip="192.168.43.7"
-port=4009
-
-#a1 = RpiRunner(TYPES['TY_ANCH'],ip,port,anchX=float(0),anchY=float(0), ultra = True)
-#a2 = RpiRunner(TYPES['TY_ANCH'],ip,port, anchX=float(0),anchY=float(100), dist=float(100))
-#a3 = RpiRunner(TYPES['TY_ANCH'],ip,port,anchX=float(100),anchY=float(0), dist=float(100))
-
-
-#a1.start()
-#a2.start()
-#a3.start()
-#a4.start()
+helpMsg = "Options : \n" \
+       "    -ip <adresse>\n" \
+       "    -p <port\n" \
+       "    -t <type> (anch/mob)\n" \
+       "    -u <ultra> (True/False)\n" \
+       "    -x <position>\n" \
+       "    -y <position>\n" \
+        "   -l <log> (True/False)\n" \
+          "    -d <distance>"
 
 
-rpi = RpiRunner(TYPES['TY_MOB'],ip,port, showLog=True)
-rpi.start()
+ip = "localhost"
+port = 4000
+t = TYPES['TY_ANCH']
+anchX = 1
+anchY = 1
+u = True
+l = True
+options = "ip:p:t:u:x:y:l:d"
+d = 42
+
+try :
+
+    opt = sys.argv
+
+    for i in range(len(opt)):
+
+
+        if opt[i] in ["-ip"] :
+            ip = opt[i+1]
+
+        elif opt[i] in ["-p"] :
+            p = opt[i+1]
+
+        elif opt[i] in ["-t"] :
+            if opt[i+1] in ["anch","ANCH","Anch"]:
+                t = TYPES['TY_ANCH']
+            elif opt[i+1] in ["mob","Mob","MOB"]:
+                t = TYPES['TY_MOB']
+
+        elif opt[i] in ["-x"] :
+            anchX = opt[i+1]
+
+        elif opt[i] in ["-y"] :
+            anchY = opt[i+1]
+
+        elif opt[i] in ["-u"] :
+            if opt[i+1] in ["False","false","f","FALSE","F"]:
+                u = False
+
+        elif opt[i] in ["-l"] :
+            if opt[i+1] in ["False","false","f","FALSE","F"]:
+                l = False
+
+        elif opt[i] in ["-d"] :
+            d = opt[i+1]
+
+    rpi = RpiRunner(t,ip,port,anchX=anchX,anchY=anchY, ultra = u,showLog=l,dist=d)
+    rpi.start()
+    rpi.join()
+
+
+except :
+    print("\nLes arguments sont incorrects : \n")
+    print(helpMsg)
+
+
+
+
+
+
+
+
+
+
+
+
+

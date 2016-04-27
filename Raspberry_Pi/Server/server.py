@@ -29,13 +29,13 @@ terminated = False
 @@@@@@@@@@@@@@@@@@@@@@@
 """
 
-def main(ip="localhost",port=4002,maxQueue=5):
+def main(ip="localhost",port=4002,maxQueue=5,printRtr = False):
 
     print("Lancement du serveur ...")
 
     console_th = console()
 
-    server_th = server(ip,port,maxQueue,printRtr=False)
+    server_th = server(ip,port,maxQueue,printRtr=printRtr)
 
     console_th.start()
     server_th.start()
@@ -504,6 +504,47 @@ class thread_client(Thread):
 
 
 
-main(ip="192.168.43.7",port=4009)
+helpMsg = "Options : \n" \
+       "    -ip <adresse>\n" \
+       "    -p <port>\n" \
+       "    -rtr <retransmission> (True/False)\n" \
+          "    -mxQ <max queue>"
+
+
+ip = "localhost"
+port = 4000
+mxQ = 5
+rtr = False
+
+options = "ip:p:rtr:mxQ"
+
+try :
+
+    opt = sys.argv
+
+    for i in range(len(opt)):
+
+        if opt[i] in ["-ip"] :
+            ip = opt[i+1]
+
+        elif opt[i] in ["-p"] :
+            p = opt[i+1]
+
+
+        elif opt[i] in ["-rtr"] :
+            if opt[i+1] in ["True","TRUE","t","true","T"]:
+                rtr = True
+
+        elif opt[i] in ["-mxQ"] :
+            mxQ = opt[i+1]
+
+
+    main(ip,port,maxQueue=mxQ,printRtr=rtr)
+
+
+except :
+    print("\nLes arguments sont incorrects : \n")
+    print(helpMsg)
+
 
 

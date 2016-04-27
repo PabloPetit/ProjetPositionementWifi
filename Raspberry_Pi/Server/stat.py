@@ -41,3 +41,13 @@ class DynamicUpdate():
             self.on_running(xdata, ydata)
             time.sleep(1)
         return xdata, ydata
+
+
+class DynamicPlot:
+
+    def __init__(self,min_x, max_x):
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.legend()
+        line1, = ax.plot([], [],'-k',label='black')
+        line2, = ax.plot([], [],'-r',label='red')

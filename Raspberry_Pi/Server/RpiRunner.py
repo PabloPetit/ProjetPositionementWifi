@@ -34,7 +34,7 @@ class RpiRunner(Thread):
         self.th_mob = None
         self.anchX = anchX
         self.anchY = anchY
-        self.ultra = ultra
+        self.ultra = bool(ultra)
         self.dist=dist
 
         global TYPES
@@ -299,7 +299,6 @@ class Anchor(Thread):
 
         if self.ultra :
             dist = self.ultra.distance()
-        self.cnsQ.put("dist calcule" + str(dist))
 
         mess = encode_float(dist)
 
@@ -630,7 +629,7 @@ try :
             ip = opt[i+1]
 
         elif opt[i] in ["-p"] :
-            p = opt[i+1]
+            port = int(opt[i+1])
 
         elif opt[i] in ["-t"] :
             if opt[i+1] in ["anch","ANCH","Anch"]:
@@ -639,10 +638,10 @@ try :
                 t = TYPES['TY_MOB']
 
         elif opt[i] in ["-x"] :
-            anchX = opt[i+1]
+            anchX = float(opt[i+1])
 
         elif opt[i] in ["-y"] :
-            anchY = opt[i+1]
+            anchY = float(opt[i+1])
 
         elif opt[i] in ["-u"] :
             if opt[i+1] in ["False","false","f","FALSE","F"]:
@@ -653,7 +652,7 @@ try :
                 l = False
 
         elif opt[i] in ["-d"] :
-            d = opt[i+1]
+            d = float(opt[i+1])
 
     rpi = RpiRunner(t,ip,port,anchX=anchX,anchY=anchY, ultra = u,showLog=l,dist=d)
     rpi.start()

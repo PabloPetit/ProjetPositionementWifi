@@ -7,7 +7,7 @@ import math
 
 
 
-fichier = open("./Server/log50-100.txt", "r")
+fichier = open("./Server/log100Rate.txt", "r")
 
 X = []
 Y = []
@@ -41,8 +41,8 @@ for l in lines:
 
 
 print(len(R3))
-plt.plot(IT, R2, 'b-')
-plt.plot(IT, avtR2, 'g-')
+plt.plot(IT, R3, 'b-')
+plt.plot(IT, avtR3, 'g-')
 #plt.plot(X, Y, 'r--')
 #plt.plot(X, Y, 'b.')
 #plt.plot(R2)

@@ -31,6 +31,9 @@ terminated = False
 
 def main(ip="localhost",port=4002,maxQueue=5,printRtr = False):
 
+    print("Ip : "+str(ip))
+    print("Port "+str(port))
+
     print("Lancement du serveur ...")
 
     console_th = console()
@@ -441,64 +444,60 @@ class thread_client(Thread):
             ready = None
             try:
                 ready = select.select([self.client.sock],[], [], thread_client.TIMEOUT)
-            except select.error:
-                self.close_connexion()
-                pass
-            else :
-                try:
-                    if ready[0] :
-                        msg = message(bytes=bytearray(self.client.sock.recv(TYPES['BYTE_SZ'])))
-                        if msg.dest == 0:
-                            continue;
-                        if msg.dest > TYPES['SERV_ID'] :
-                            sent = False
-                            for mob in mobile_list :
+
+                if ready[0] :
+                    msg = message(bytes=bytearray(self.client.sock.recv(TYPES['BYTE_SZ'])))
+                    if msg.dest == 0:
+                        continue;
+                    if msg.dest > TYPES['SERV_ID'] :
+                        sent = False
+                        for mob in mobile_list :
+                            if mob.id == msg.dest :
+                                mob.sock.send(msg.str())
+                                sent = True
+                                break
+
+                        if not sent :
+                            for mob in anchor_list :
                                 if mob.id == msg.dest :
                                     mob.sock.send(msg.str())
                                     sent = True
                                     break
 
-                            if not sent :
-                                for mob in anchor_list :
-                                    if mob.id == msg.dest :
-                                        mob.sock.send(msg.str())
-                                        sent = True
-                                        break
-
-                            if sent :
-                                if self.printRtr :
-                                    console_queue.put("Message du client "+str(self.client.id)+" à été retransmit vers le client "+str(msg.dest))
-                            else:
-                                console_queue.put("Le message du client "+str(self.client.id)+" n'as pas trouvé de destinataire\n"+msg.toString())
-                                try:
-                                    self.client.sock.send(message(dest=self.client.id, ty=TYPES['UNK_ID'],msg=msg.dest).str())
-                                except socket.error:
-                                    self.close_connexion()
-
-
-                        else :
-                            console_queue.put("Le message demande à être traité par le serveur")
-
-                            if msg.ty == TYPES['ASK_ID'] :
-                                console_queue.put("Demande d'id reçu du client "+str(self.client.id))
-                                self.new_id()
-                            elif msg.ty == TYPES['ASK_AL']:
-                                console_queue.put("Demande de liste des ancres reçu du client "+str(self.client.id))
-                                self.send_anchor_list()
-                            elif msg.ty == TYPES['RES_LG']:
-                                console_queue.put("Log reçu du client "+str(self.client.id))
-                                self.maj_log(msg)
-                            elif msg.ty == TYPES['IM_OUT']:
-                                console_queue.put("Le client "+str(self.client.id)+" annoce sa sortie du réseaux")
+                        if sent :
+                            if self.printRtr :
+                                console_queue.put("Message du client "+str(self.client.id)+" à été retransmit vers le client "+str(msg.dest))
+                        else:
+                            console_queue.put("Le message du client "+str(self.client.id)+" n'as pas trouvé de destinataire\n"+msg.toString())
+                            try:
+                                self.client.sock.send(message(dest=self.client.id, ty=TYPES['UNK_ID'],msg=msg.dest).str())
+                            except socket.error:
                                 self.close_connexion()
-                                #console_queue.put(msg.toString())
-                            else:
-                                console_queue.put("Demande incomprise du client "+str(self.client.id))
-                                console_queue.put(msg.toString())
 
-                except socket.error:
-                        self.close_connexion()
-                        return
+
+                    else :
+                        console_queue.put("Le message demande à être traité par le serveur")
+
+                        if msg.ty == TYPES['ASK_ID'] :
+                            console_queue.put("Demande d'id reçu du client "+str(self.client.id))
+                            self.new_id()
+                        elif msg.ty == TYPES['ASK_AL']:
+                            console_queue.put("Demande de liste des ancres reçu du client "+str(self.client.id))
+                            self.send_anchor_list()
+                        elif msg.ty == TYPES['RES_LG']:
+                            console_queue.put("Log reçu du client "+str(self.client.id))
+                            self.maj_log(msg)
+                        elif msg.ty == TYPES['IM_OUT']:
+                            console_queue.put("Le client "+str(self.client.id)+" annoce sa sortie du réseaux")
+                            self.close_connexion()
+                            #console_queue.put(msg.toString())
+                        else:
+                            console_queue.put("Demande incomprise du client "+str(self.client.id))
+                            console_queue.put(msg.toString())
+
+            except :
+                self.close_connexion()
+                return
 
 
 
@@ -528,7 +527,7 @@ try :
             ip = opt[i+1]
 
         elif opt[i] in ["-p"] :
-            p = opt[i+1]
+            port = opt[i+1]
 
 
         elif opt[i] in ["-rtr"] :
@@ -539,7 +538,7 @@ try :
             mxQ = opt[i+1]
 
 
-    main(ip,port,maxQueue=mxQ,printRtr=rtr)
+    main(ip,int(port),maxQueue=int(mxQ),printRtr=rtr)
 
 
 except :

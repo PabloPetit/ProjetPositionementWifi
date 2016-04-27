@@ -1,4 +1,3 @@
-import getopt
 import socket
 import select
 from queue import Queue
@@ -330,9 +329,11 @@ class Anchor(Thread):
 class Mobile(Thread):
 
 
-    MARGIN = TYPES['TOL']
     V_MIN = TYPES['MIN']
     V_MAX = TYPES['MAX']
+    T_MIN = TYPES['TL_MIN']
+    T_MAX = TYPES['TL_MAX']
+
     MIN_ANCH = 3
 
     IT_TIME = 0.2
@@ -346,8 +347,9 @@ class Mobile(Thread):
         self.cnsQ = Rpi.cnsQ
         self.x = x
         self.y = y
-        self.avtX = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.MARGIN)
-        self.avtY = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.MARGIN)
+
+        self.avtX = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.T_MIN,Mobile.T_MAX)
+        self.avtY = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.T_MIN,Mobile.T_MAX)
         self.anch_list = {}
         self.terminated = False
         self.it = 0
@@ -358,7 +360,7 @@ class Mobile(Thread):
         res['x'] = 0
         res['y'] = 0
         res['dist'] = Mobile.V_MAX
-        res['avt'] = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.MARGIN)
+        res['avt'] = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.T_MIN,Mobile.T_MAX)
         res['last'] = -1
         return res
 

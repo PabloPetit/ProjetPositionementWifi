@@ -325,7 +325,7 @@ class thread_client(Thread):
             try:
 
                 mess = message(dest=self.client.id, ty=TYPES['ASK_TY'], msg=server_id).str()
-                #print(mess)
+
                 self.client.sock.send(mess) # Demande son type au client
                 console_queue.put("En attente de réponse - client "+str(self.client.id)+" ...")
                 ready = select.select([self.client.sock],[], [], thread_client.TIMEOUT)

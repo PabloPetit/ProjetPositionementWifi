@@ -46,11 +46,12 @@ class Mobile {
         float getY();
         int getXDir(){return this->x->get_lastDir();};
         int getYDir(){return this->y->get_lastDir();};
-        Vector<Anchor*> get_chosen_Anchor(){return chosen_Anchor;};
-
-        Anchor* get_chosen_Anchor_I(int i){return chosen_Anchor[i];};
         void trilateration();
+        bool add_Anchor_Id(Anchor* a);
+        bool remove_Anchor_Id(uint8_t id);
+        Anchor* get_Anchor(int i){return this->all_Anchor_Liste[i];};
         void update_Anchor_Liste(Vector<Anchor*> liste);
+        size_t get_anchor_size(){return this->all_Anchor_Liste.size();};
 
 
 
@@ -59,7 +60,6 @@ class Mobile {
         Avt *x;
         Avt *y;
         Vector<Anchor*> all_Anchor_Liste;
-        Vector<Anchor*> chosen_Anchor;
 
 
 };

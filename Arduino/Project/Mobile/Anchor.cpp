@@ -30,27 +30,25 @@ float Anchor::get_Range(){
     return this->range->get_Value();
 }
 
-
 void Mobile::update_Anchor_Liste(Vector<Anchor*> liste){
-    /* mise a jour de la liste des ancres
-     *
-     * Regarder si dans la liste des ancre choisie il y en a qui ne sont plus là
-     * et les remplacer
-     *
-     */
+     Vector<Anchor*> tmp;
 
      for(int i = 0; i< liste.size(); i++){
-         this->all_Anchor_Liste.push_back(liste[i]);
-         if(i < 3)this->chosen_Anchor.push_back(liste[i]);
+         uint8_t id = liste[i]->getId();
+         bool isadd = false;
+         for (int j = 0; j< this->all_Anchor_Liste.size(); j++){
+             if(this->all_Anchor_Liste[j]->getId() == id){
+                tmp.push_back(this->all_Anchor_Liste[j]);
+                 isadd = true;
+                 break;
+             }
+         }
+         if (! isadd){
+             tmp.push_back(liste[i]);
+         }
      }
-
-}
-
-
-
-
-
-
+     this->all_Anchor_Liste = tmp;
+ }
 
 
 Mobile::Mobile(uint8_t id){
@@ -80,11 +78,36 @@ float Mobile::getY(){
     return this->y->get_Value();
 }
 
+
+bool Mobile::remove_Anchor_Id(uint8_t id){
+    Vector<Anchor*> tmp;
+    bool removed = false;
+    for(int i = 0; i< this->all_Anchor_Liste.size(); i++){
+        uint8_t idi = this->all_Anchor_Liste[i]->getId();
+        if(id != idi) tmp.push_back(this->all_Anchor_Liste[i]);
+        else removed = true;
+    }
+    this->all_Anchor_Liste = tmp;
+    return removed;
+}
+
+bool Mobile::add_Anchor_Id(Anchor* a){
+    uint8_t id = a->getId();
+    for(int i = 0; i< this->all_Anchor_Liste.size(); i++){
+        uint8_t idi = this->all_Anchor_Liste[i]->getId();
+        if(id == idi) return false;
+    }
+    this->all_Anchor_Liste.push_back(a);
+    return true;
+}
+
+
+
 // TODO : RE-WRITE
 void Mobile::trilateration() {
-    Anchor *anch1 = this->chosen_Anchor[0];
-    Anchor *anch2 = this->chosen_Anchor[1];
-    Anchor *anch3 = this->chosen_Anchor[2];
+    Anchor *anch1 = this->all_Anchor_Liste[0];
+    Anchor *anch2 = this->all_Anchor_Liste[1];
+    Anchor *anch3 = this->all_Anchor_Liste[2];
 
     float d = sqrt(pow(anch2->getX()-anch1->getX(), 2) + pow(anch2->getY()-anch1->getY(), 2)); // the distance between the centers P1 and P2 and
 
@@ -109,6 +132,6 @@ void Mobile::trilateration() {
 
     // gives the points in the original coordinate system since  e_x, e_y and e_z, the basis unit vectors, are expressed in the original coordinate system.
     this->adjust_X(anch1->getX()+ x*ex[0] + y*ey[0]);
-    this->adjust_Y(anch1->getX()+ x*ex[1] + y*ey[1]);
+    this->adjust_Y(anch1->getY()+ x*ex[1] + y*ey[1]);
 
 }

@@ -21,10 +21,8 @@
 #define CNF_TY  5        // Confirme la reception du type
 #define ASK_AL  6        // Demande la liste des ancres : MESS = id
 #define RES_AL  7        // Donne la liste des ancres : MESS = int + id*
-#define ASK_DT  8        // Demande une evaluation de distance : MESS = id
-#define RES_DT  9        // Renvoi l'evaluation de distance : MESS = int
-#define ASK_PS  10       // Demande sa position à une ancre : MESS = id
-#define RES_PS  11       // Renvoi sa position : MESS = int+int
+#define ASK_ST  8        // Demande une evaluation de distance : MESS = id
+#define RES_ST  9        // Renvoi l'evaluation de distance : MESS = int
 #define ASK_ID  12       // Redemande son id
 #define UNK_ID  13       // Id inconnue, message non redirigé : MESS = dest
 #define IM_OUT  14       // Annonce une sortie du réseau TODO
@@ -69,20 +67,12 @@ bool recv_Comfirm_Type(Server esp);
 
 
 /**
- * Récupère La position d'une ancre
+ * Récupère La position et l'evaluation d'une ancre
  *
  * @param esp - module wifi esp8266 pour la communication
- * @return
+ * @return -1 echec
  */
-int recv_Anchor_Position(Server esp, Anchor *ancre);
-
-/**
- * Récupère La distance d'une ancre
- *
- * @param esp - module wifi esp8266 pour la communication
- * @return
- */
-float recv_Anchor_Distance(Server esp, Anchor *ancre);
+float recv_Anchor_Status(Server esp, Anchor *ancre);
 
 
 
@@ -117,24 +107,14 @@ bool send_ask_Anchor_List(Server esp, uint8_t id);
 
 
 /**
- * Envoi au serveur une demande de la position d'une ancre
+ * Envoi au serveur une demande de la position et une evaluation de distance d'une ancre
  *
  * @param esp - module wifi esp8266 pour la communication
  * @retval true - success.
  * @retval false - failure.
  */
-bool send_ask_Position(Server esp, Anchor *anchor, uint8_t id);
+bool send_ask_Status(Server esp, Anchor *anchor, uint8_t id);
 
-
-
-/**
- * Envoi au serveur une demande d'évaluation de la distance
- *
- * @param esp - module wifi esp8266 pour la communication
- * @retval true - success.
- * @retval false - failure.
- */
-bool send_ask_Distance(Server esp, Anchor *anchor, uint8_t id);
 
 
 
@@ -163,21 +143,11 @@ bool send_Log(Server esp, Mobile mobile, int iteration, float d1, float d2, floa
  * @param esp - module wifi esp8266 pour la communication
  * @param X - notre position X
  * @param Y - notre position Y
+ * @param D - notre evaluation de distance d
  * @retval true - success.
  * @retval false - failure.
  */
-bool send_Position(Server esp, float x, float y, uint8_t id);
-
-
-/**
- * Envoi au serveur une evaluation de distance
- *
- * @param esp - module wifi esp8266 pour la communication
- * @param d - distance evalué
- * @retval true - success.
- * @retval false - failure.
- */
-bool send_Distance(Server esp, float d, uint8_t id);
+bool send_Status(Server esp, float x, float y, float d,  uint8_t id);
 
 
 /**

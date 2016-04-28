@@ -11,13 +11,13 @@
 #define SSID            "HONOR_KIW-L21_E44A"
 #define PASSWORD        "catalina"
 #define SERVER_ADDR     "192.168.43.7"
-#define PORT            4009
+#define PORT            4000
 #define FAILURE         "FAIL"
 #define SUCCESS         "SUCCESS"
 
 #define MAX_ESSAI       5
 #define MODE_DEBUG      true
-#define DELAI           700 // delai entre les demande d'evaluation de distance
+#define DELAI           1 // delai entre les demande d'evaluation de distance
 
 
 #define ANCRE           1

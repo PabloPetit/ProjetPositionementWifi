@@ -44,7 +44,7 @@ int Avt::get_lastDir(){
 
 Avt::Avt(){
     this->current_Val = MIN;
-    this->delta = 5;
+    this->delta = 1;
     this->iteration = 0;
     this->last_direction = 0;
     // si premiere fois peut-être prendre directement la premiere val

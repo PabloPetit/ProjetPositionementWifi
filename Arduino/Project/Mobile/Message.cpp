@@ -79,18 +79,17 @@ Vector<Anchor*> recv_Anchor_List(Server esp){
 
 
 
-int recv_Anchor_Position(Server esp, Anchor *ancre){
+float recv_Anchor_Status(Server esp, Anchor *ancre){
     uint8_t tmp[BYTE_SZ];
     int size = esp.recv(tmp, BYTE_SZ, 2000);
     uint8_t type_message = tmp[1];
-    if(type_message != RES_PS){
+    if(type_message != RES_ST){
         DEBUG.print("\ntype receive ");
         DEBUG.println(type_message);
-        DEBUG.print("RES_PS ");
-        DEBUG.println(RES_PS);
-        return -1;
+        DEBUG.print("RES_ST ");
+        DEBUG.println(RES_ST);
+        return -1.0f;
     }
-
 
     float x;
     uint8_t b[] = {tmp[2], tmp[3], tmp[4], tmp[5]};
@@ -98,36 +97,20 @@ int recv_Anchor_Position(Server esp, Anchor *ancre){
     float y;
     uint8_t c[] = {tmp[6], tmp[7], tmp[8], tmp[9]};
     memcpy(&y, &c, sizeof(y));
+
+    float d;
+    uint8_t a[] = {tmp[10], tmp[11], tmp[12], tmp[13]};
+    memcpy(&d, &a, sizeof(d));
+
     DEBUG.print("X :");
     DEBUG.print(x);
     DEBUG.print(" Y :");
-    DEBUG.println(y);
+    DEBUG.print(y);
+    DEBUG.print(" DT :");
+    DEBUG.println(d);
     ancre->set_Position(x, y);
-    return 1;
-}
-
-float recv_Anchor_Distance(Server esp, Anchor *ancre){
-    uint8_t tmp[BYTE_SZ];
-    int size = esp.recv(tmp, BYTE_SZ, 2000);
-    uint8_t type_message = tmp[1];
-    if(type_message != RES_DT){
-        DEBUG.print("\ntype receive ");
-        DEBUG.println(type_message);
-        DEBUG.print("RES_DT ");
-        DEBUG.println(RES_DT);
-        return -1.0f;
-    }
-
-
-    float f;
-    uint8_t b[] = {tmp[2], tmp[3], tmp[4], tmp[5]};
-    memcpy(&f, &b, sizeof(f));
-    DEBUG.print("Distance receive from :");
-    DEBUG.print(ancre->getId());
-    DEBUG.print(" = ");
-    DEBUG.println(f);
-    ancre->adjust_Range(f);
-    return f;
+    ancre->adjust_Range(d);
+    return d;
 }
 
 
@@ -172,24 +155,14 @@ bool send_ask_Anchor_List(Server esp, uint8_t id){
 
 }
 
-bool send_ask_Position(Server esp, Anchor *anchor, uint8_t id){
+bool send_ask_Status(Server esp, Anchor *anchor, uint8_t id){
     uint8_t tmp[BYTE_SZ] = {0};
     tmp[0] = anchor->getId();
-    tmp[1] = ASK_PS;
+    tmp[1] = ASK_ST;
     tmp[2] = id;
-
     return esp.send(tmp, BYTE_SZ);
 }
 
-
-bool send_ask_Distance(Server esp, Anchor *anchor, uint8_t id){
-    uint8_t tmp[BYTE_SZ] = {0};
-    tmp[0] = anchor->getId();
-    tmp[1] = ASK_DT;
-    tmp[2] = id;
-
-    return esp.send(tmp, BYTE_SZ);
-}
 
 bool send_Log(Server esp, Mobile mobile, int iteration, float d1, float d2, float d3){
     uint8_t tmp[BYTE_SZ] = {0};
@@ -208,7 +181,7 @@ bool send_Log(Server esp, Mobile mobile, int iteration, float d1, float d2, floa
     tmp[8] = x_array[2];
     tmp[9] = x_array[3];
 
-    *((float *)x_array) = mobile.get_chosen_Anchor_I(0)->get_Range();
+    *((float *)x_array) = mobile.get_Anchor(0)->get_Range();
     tmp[10] = x_array[0];
     tmp[11] = x_array[1];
     tmp[12] = x_array[2];
@@ -220,7 +193,7 @@ bool send_Log(Server esp, Mobile mobile, int iteration, float d1, float d2, floa
     tmp[16] = x_array[2];
     tmp[17] = x_array[3];
 
-    *((float *)x_array) = mobile.get_chosen_Anchor_I(1)->get_Range();
+    *((float *)x_array) = mobile.get_Anchor(1)->get_Range();
     tmp[18] = x_array[0];
     tmp[19] = x_array[1];
     tmp[20] = x_array[2];
@@ -232,7 +205,7 @@ bool send_Log(Server esp, Mobile mobile, int iteration, float d1, float d2, floa
     tmp[24] = x_array[2];
     tmp[25] = x_array[3];
 
-    *((float *)x_array) = mobile.get_chosen_Anchor_I(2)->get_Range();
+    *((float *)x_array) = mobile.get_Anchor(2)->get_Range();
     tmp[26] = x_array[0];
     tmp[27] = x_array[1];
     tmp[28] = x_array[2];
@@ -255,44 +228,39 @@ bool send_Log(Server esp, Mobile mobile, int iteration, float d1, float d2, floa
 
 
 
-bool send_Position(Server esp, float x, float y, uint8_t id){
+bool send_Status(Server esp, float x, float y, float d,  uint8_t id){
     uint8_t tmp[BYTE_SZ] = {0};
     tmp[0] = id;
-    tmp[1] = RES_PS;
+    tmp[1] = RES_ST;
     uint8_t x_array[4];
     *((float *)x_array) = x;
 
-    uint8_t y_array[4];
-    *((float *)y_array) = y;
 
     tmp[2] = x_array[0];
     tmp[3] = x_array[1];
     tmp[4] = x_array[2];
     tmp[5] = x_array[3];
 
-    tmp[6] = x_array[0];
-    tmp[7] = x_array[1];
-    tmp[8] = x_array[2];
-    tmp[9] = x_array[3];
-    return esp.send(tmp, BYTE_SZ);
+    uint8_t y_array[4];
+    *((float *)y_array) = y;
 
-}
 
-bool send_Distance(Server esp, float d, uint8_t id){
-    uint8_t tmp[BYTE_SZ] = {0};
-    tmp[0] = id;
-    tmp[1] = RES_DT;
+    tmp[6] = y_array[0];
+    tmp[7] = y_array[1];
+    tmp[8] = y_array[2];
+    tmp[9] = y_array[3];
+
     uint8_t d_array[4];
     *((float *)d_array) = d;
 
 
-    tmp[2] = d_array[0];
-    tmp[3] = d_array[1];
-    tmp[4] = d_array[2];
-    tmp[5] = d_array[3];
+    tmp[10] = d_array[0];
+    tmp[11] = d_array[1];
+    tmp[12] = d_array[2];
+    tmp[13] = d_array[3];
     return esp.send(tmp, BYTE_SZ);
-}
 
+}
 
 bool send_IMOUT(Server esp, uint8_t id){
     uint8_t tmp[BYTE_SZ] = {0};

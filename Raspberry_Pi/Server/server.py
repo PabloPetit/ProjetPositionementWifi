@@ -3,7 +3,9 @@ import select
 from queue import Queue
 from threading import *
 from proto import *
+from DynamicPlot import *
 from time import *
+
 import sys
 
 
@@ -27,13 +29,16 @@ terminated = False
 @@@@@@@@@@@@@@@@@@@@@@@
 """
 
-def main(ip="localhost",port=4002,maxQueue=5):
+def main(ip="localhost",port=4002,maxQueue=5,printRtr = False):
+
+    print("Ip : "+str(ip))
+    print("Port "+str(port))
 
     print("Lancement du serveur ...")
 
     console_th = console()
 
-    server_th = server(ip,port,maxQueue,printRtr=False)
+    server_th = server(ip,port,maxQueue,printRtr=printRtr)
 
     console_th.start()
     server_th.start()
@@ -113,8 +118,9 @@ class console(Thread):
         if len(id)>0:
             mob = id[0]
             cmd = input("Voulez-vous : \n"
-                  "1/ Afficher le log\n"
-                  "2/ Enregistrer le log\n")
+                  "1/ Afficher le log en console\n"
+                  "2/Afficher le log sur plots"
+                  "3/ Enregistrer le log\n")
 
             if not cmd.isdigit():
                 return
@@ -123,8 +129,11 @@ class console(Thread):
 
             if cmd == 1 :
                 print(mob.get_log())
-            elif cmd == 2 :
 
+            elif cmd == 2 :
+                mob.initPlots()
+
+            elif cmd == 3 :
                 cmd = input("Entrez le nom du fichier : \n> ")
                 try :
                	    fichier = open(cmd, "w")
@@ -180,7 +189,6 @@ class server(Thread):
             console_queue.put("quit")
             return
 
-
         console_queue.put("Le server est en ligne. IP = "+str(self.sock.getsockname()[0])+" Port  = "+str(self.sock.getsockname()[1]))
 
         while not terminated:
@@ -217,6 +225,14 @@ class thread_client(Thread):
         self.terminated = False
         self.log = []
         self.printRtr = printRtr
+
+        self.printingPlots = False
+
+        self.plotPosX = None
+        self.plotPosY = None
+        self.plotD1 = None
+        self.plotD2 = None
+        self.plotD3 = None
 
     def close_connexion(self, pb = True):
         global TYPES
@@ -312,7 +328,7 @@ class thread_client(Thread):
             try:
 
                 mess = message(dest=self.client.id, ty=TYPES['ASK_TY'], msg=server_id).str()
-                #print(mess)
+
                 self.client.sock.send(mess) # Demande son type au client
                 console_queue.put("En attente de réponse - client "+str(self.client.id)+" ...")
                 ready = select.select([self.client.sock],[], [], thread_client.TIMEOUT)
@@ -365,19 +381,46 @@ class thread_client(Thread):
         except socket.error:
                     self.close_connexion()
 
+    def updatePlots(self,log):
+        self.plotPosX.update(log[8],log[0]) # BOF BOF
+        self.plotPosY.update(log[8],log[1]) # BOF BOF
+        self.plotD1.update(log[2],log[3])
+        self.plotD2.update(log[4],log[5])
+        self.plotD3.update(log[6],log[7])
+
+
+    def initPlots(self):
+        global TYPES
+        self.plotPosX = DynamicPlot(TYPES['MIN'],TYPES['MAX'])
+        self.plotPosY = DynamicPlot(TYPES['MIN'],TYPES['MAX'])
+        self.plotD1 = DynamicPlot(TYPES['MIN'],TYPES['MAX'])
+        self.plotD2 = DynamicPlot(TYPES['MIN'],TYPES['MAX'])
+        self.plotD3 = DynamicPlot(TYPES['MIN'],TYPES['MAX'])
+        self.printingPlots = True
+        for i in self.log :
+            self.updatePlots(i)
+
+
     def maj_log(self,msg):
 
         try :
-            x = decode_float(msg.msg[0:4])
-            y = decode_float(msg.msg[4:8])
-            dt1 = decode_float(msg.msg[8:12])
-            sg1 = decode_float(msg.msg[12:16])
-            dt2 = decode_float(msg.msg[16:20])
-            sg2 = decode_float(msg.msg[20:24])
-            dt3 = decode_float(msg.msg[24:28])
-            sg3 = decode_float(msg.msg[28:32])
-            it = decode_float(msg.msg[32:36])
-            self.log.append((x,y,dt1,sg1,dt2,sg2,dt3,sg3,it))
+            x = decode_float(msg.msg[0:4]) # 0
+            y = decode_float(msg.msg[4:8]) # 1
+            dt1 = decode_float(msg.msg[8:12]) # 2
+            sg1 = decode_float(msg.msg[12:16]) # 3
+            dt2 = decode_float(msg.msg[16:20]) # 4
+            sg2 = decode_float(msg.msg[20:24]) # 5
+            dt3 = decode_float(msg.msg[24:28]) # 6
+            sg3 = decode_float(msg.msg[28:32]) # 7
+            it = decode_float(msg.msg[32:36]) # 8
+
+            tmp = (x,y,dt1,sg1,dt2,sg2,dt3,sg3,it)
+            self.log.append(tmp)
+
+            if self.printingPlots :
+                self.updatePlots(tmp)
+
+
         except :
             console_queue.put("Log illisible : \n"+msg.toString())
             return
@@ -401,69 +444,106 @@ class thread_client(Thread):
             ready = None
             try:
                 ready = select.select([self.client.sock],[], [], thread_client.TIMEOUT)
-            except select.error:
-                self.close_connexion()
-                pass
-            else :
-                try:
-                    if ready[0] :
-                        msg = message(bytes=bytearray(self.client.sock.recv(TYPES['BYTE_SZ'])))
-                        if msg.dest == 0:
-                            continue;
-                        if msg.dest > TYPES['SERV_ID'] :
-                            sent = False
-                            for mob in mobile_list :
+
+                if ready[0] :
+                    msg = message(bytes=bytearray(self.client.sock.recv(TYPES['BYTE_SZ'])))
+                    if msg.dest == 0:
+                        continue;
+                    if msg.dest > TYPES['SERV_ID'] :
+                        sent = False
+                        for mob in mobile_list :
+                            if mob.id == msg.dest :
+                                mob.sock.send(msg.str())
+                                sent = True
+                                break
+
+                        if not sent :
+                            for mob in anchor_list :
                                 if mob.id == msg.dest :
                                     mob.sock.send(msg.str())
                                     sent = True
                                     break
 
-                            if not sent :
-                                for mob in anchor_list :
-                                    if mob.id == msg.dest :
-                                        mob.sock.send(msg.str())
-                                        sent = True
-                                        break
-
-                            if sent :
-                                if self.printRtr :
-                                    console_queue.put("Message du client "+str(self.client.id)+" à été retransmit vers le client "+str(msg.dest))
-                            else:
-                                console_queue.put("Le message du client "+str(self.client.id)+" n'as pas trouvé de destinataire\n"+msg.toString())
-                                try:
-                                    self.client.sock.send(message(dest=self.client.id, ty=TYPES['UNK_ID'],msg=msg.dest).str())
-                                except socket.error:
-                                    self.close_connexion()
-
-
-                        else :
-                            console_queue.put("Le message demande à être traité par le serveur")
-
-                            if msg.ty == TYPES['ASK_ID'] :
-                                console_queue.put("Demande d'id reçu du client "+str(self.client.id))
-                                self.new_id()
-                            elif msg.ty == TYPES['ASK_AL']:
-                                console_queue.put("Demande de liste des ancres reçu du client "+str(self.client.id))
-                                self.send_anchor_list()
-                            elif msg.ty == TYPES['RES_LG']:
-                                console_queue.put("Log reçu du client "+str(self.client.id))
-                                self.maj_log(msg)
-                            elif msg.ty == TYPES['IM_OUT']:
-                                console_queue.put("Le client "+str(self.client.id)+" annoce sa sortie du réseaux")
+                        if sent :
+                            if self.printRtr :
+                                console_queue.put("Message du client "+str(self.client.id)+" à été retransmit vers le client "+str(msg.dest))
+                        else:
+                            console_queue.put("Le message du client "+str(self.client.id)+" n'as pas trouvé de destinataire\n"+msg.toString())
+                            try:
+                                self.client.sock.send(message(dest=self.client.id, ty=TYPES['UNK_ID'],msg=msg.dest).str())
+                            except socket.error:
                                 self.close_connexion()
-                                #console_queue.put(msg.toString())
-                            else:
-                                console_queue.put("Demande incomprise du client "+str(self.client.id))
-                                console_queue.put(msg.toString())
-
-                except socket.error:
-                        self.close_connexion()
-                        return
 
 
+                    else :
+                        console_queue.put("Le message demande à être traité par le serveur")
+
+                        if msg.ty == TYPES['ASK_ID'] :
+                            console_queue.put("Demande d'id reçu du client "+str(self.client.id))
+                            self.new_id()
+                        elif msg.ty == TYPES['ASK_AL']:
+                            console_queue.put("Demande de liste des ancres reçu du client "+str(self.client.id))
+                            self.send_anchor_list()
+                        elif msg.ty == TYPES['RES_LG']:
+                            console_queue.put("Log reçu du client "+str(self.client.id))
+                            self.maj_log(msg)
+                        elif msg.ty == TYPES['IM_OUT']:
+                            console_queue.put("Le client "+str(self.client.id)+" annoce sa sortie du réseaux")
+                            self.close_connexion()
+                            #console_queue.put(msg.toString())
+                        else:
+                            console_queue.put("Demande incomprise du client "+str(self.client.id))
+                            console_queue.put(msg.toString())
+
+            except :
+                self.close_connexion()
+                return
 
 
 
-main(ip="192.168.43.7",port=4003)
+
+
+helpMsg = "Options : \n" \
+       "    -ip <adresse>\n" \
+       "    -p <port>\n" \
+       "    -rtr <retransmission> (True/False)\n" \
+          "    -mxQ <max queue>"
+
+
+ip = "192.168.43.7"
+port = 4000
+mxQ = 5
+rtr = False
+
+options = "ip:p:rtr:mxQ"
+
+try :
+
+    opt = sys.argv
+
+    for i in range(len(opt)):
+
+        if opt[i] in ["-ip"] :
+            ip = opt[i+1]
+
+        elif opt[i] in ["-p"] :
+            port = opt[i+1]
+
+
+        elif opt[i] in ["-rtr"] :
+            if opt[i+1] in ["True","TRUE","t","true","T"]:
+                rtr = True
+
+        elif opt[i] in ["-mxQ"] :
+            mxQ = opt[i+1]
+
+
+    main(ip,int(port),maxQueue=int(mxQ),printRtr=rtr)
+
+
+except :
+    print("\nLes arguments sont incorrects : \n")
+    print(helpMsg)
+
 
 

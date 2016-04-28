@@ -34,6 +34,11 @@ TYPES['TY_BOTH'] = 3
 
 TYPES['BYTE_SZ'] = 64 #taille du message : 65 apres encode (), 81 sans : pour 32 char
 
+TYPES['MAX'] = 150
+TYPES['MIN'] = 0
+TYPES['TL_MIN'] = 0.1
+TYPES['TL_MAX'] = 50
+
 
 def encode_float(f):
     buf = struct.pack('f', f)

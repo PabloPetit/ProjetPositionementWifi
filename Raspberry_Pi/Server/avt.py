@@ -1,17 +1,12 @@
-import random
-import time
-import math
-
 class Avt:
 
-    DELTA_MULTI = 1.5
-
-    def __init__(self,mini,maxi,tolerance):
+    def __init__(self,mini,maxi,toleranceMin,toleranceMax):
         self.mini = mini
         self.maxi = maxi
         self.currentVal = mini
-        self.tolerance = tolerance
-        self.delta = maxi
+        self.toleranceMin = toleranceMin
+        self.toleranceMax = toleranceMax
+        self.delta = toleranceMax
         self.it = 0
         self.sens = 0 # -1 0 ou 1
 
@@ -35,45 +30,14 @@ class Avt:
 
         if sens == self.sens :
             self.delta *= 2
-            if self.delta > self.maxi :
-                self.delta = self.maxi
+            if self.delta > self.toleranceMax :
+                self.delta = self.toleranceMax
 
         else:
             self.delta *= 1/3.0
-            if self.delta < self.mini :
-                self.delta = self.mini
+            if self.delta < self.toleranceMin :
+                self.delta = self.toleranceMin
 
         self.sens = sens
 
 
-"""
-avt = avt.py(0,10,0.0001)
-v= []
-ds = []
-delta = []
-i = 0
-
-its = 400
-sigma = 4
-
-while i < its :
-
-    dist = random.gauss(5,sigma)
-
-    #print("Distance envoyee : "+str(dist))
-    avt.update(dist)
-    v.append(avt.currentVal)
-    ds.append(dist)
-    delta.append(avt.delta)
-    #time.sleep(0.1)
-    i+=1
-
-plt.plot(ds)
-plt.plot(v)
-
-print(avt.currentVal)
-#print(delta)
-plt.plot(delta)
-#plt.ylabel('some numbers')
-plt.show()
-"""

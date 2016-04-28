@@ -6,6 +6,7 @@ from proto import *
 from avt import *
 from math import *
 import sys
+import random
 
 try:
     from ultra import *
@@ -33,8 +34,22 @@ class RpiRunner(Thread):
         self.th_mob = None
         self.anchX = anchX
         self.anchY = anchY
-        self.ultra = ultra
+        self.ultra = bool(ultra)
         self.dist=dist
+
+        global TYPES
+
+        if self.showLog :
+
+            if self.ty == TYPES['TY_ANCH'] :
+                print("L'ancre est lancée")
+
+            print("Addresse : "+str(self.host))
+            print("Port : "+str(self.port))
+            print("X = "+str(self.anchX))
+            print("Y = "+str(self.anchY))
+            print("Ultra : "+str(self.ultra))
+            print("Dist : "+str(self.dist))
 
     def run(self):
         self.cns.start()
@@ -153,7 +168,7 @@ class RpiRunner(Thread):
         return False
 
     def connexion(self):
-        self.cnsQ.put("Lancement du server...")
+        self.cnsQ.put("Connexion en cours ...")
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.connect((self.host, self.port))
@@ -284,7 +299,6 @@ class Anchor(Thread):
 
         if self.ultra :
             dist = self.ultra.distance()
-        self.cnsQ.put("dist calcule" + str(dist))
 
         mess = encode_float(dist)
 
@@ -314,9 +328,12 @@ class Anchor(Thread):
 
 class Mobile(Thread):
 
-    MARGIN = 0.001
-    V_MIN = 0
-    V_MAX = 150
+
+    V_MIN = TYPES['MIN']
+    V_MAX = TYPES['MAX']
+    T_MIN = TYPES['TL_MIN']
+    T_MAX = TYPES['TL_MAX']
+
     MIN_ANCH = 3
 
     IT_TIME = 0.2
@@ -330,8 +347,9 @@ class Mobile(Thread):
         self.cnsQ = Rpi.cnsQ
         self.x = x
         self.y = y
-        self.avtX = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.MARGIN)
-        self.avtY = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.MARGIN)
+
+        self.avtX = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.T_MIN,Mobile.T_MAX)
+        self.avtY = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.T_MIN,Mobile.T_MAX)
         self.anch_list = {}
         self.terminated = False
         self.it = 0
@@ -339,10 +357,10 @@ class Mobile(Thread):
     def new_anch(self,id):
         res = {}
         res['id'] = int(id)
-        res['x'] = None
-        res['y'] = None
+        res['x'] = 0
+        res['y'] = 0
         res['dist'] = Mobile.V_MAX
-        res['avt'] = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.MARGIN)
+        res['avt'] = Avt(Mobile.V_MIN,Mobile.V_MAX,Mobile.T_MIN,Mobile.T_MAX)
         res['last'] = -1
         return res
 
@@ -385,7 +403,7 @@ class Mobile(Thread):
 
             self.ask_for_distance()
 
-            self.trilaterate()
+            # self.trilaterate()
 
             self.send_log()
 
@@ -414,6 +432,7 @@ class Mobile(Thread):
         dC = C['avt'].currentVal
 
         d = sqrt(pow(xB-xA,2)+pow(yB-yA,2))
+
 
         ex = [0]*2
         ex[0] = (xB - xA) / d
@@ -462,28 +481,33 @@ class Mobile(Thread):
 
     def ask_position(self,anch):
         global TYPES
-        try:
-            msg = message(dest=anch['id'],ty=TYPES['ASK_PS'],msg=int(self.id))
-            self.sock.send(msg.str())
-            ready = select.select([self.sock],[],[],RpiRunner.TIMEOUT)
-            if ready[0] :
-                try :
-                    msg = message(bytes=self.sock.recv(TYPES['BYTE_SZ']))
-                    if msg.ty == TYPES['RES_PS']:
-                        self.set_anchor_position(anch,msg.msg)
-                        return True
-                    else :
-                        self.cnsQ.put("Message érroné : (2)\n"+msg.toString())
+        cmp = 0
+        while cmp < 5 : # BARBARE
+
+            try:
+                msg = message(dest=anch['id'],ty=TYPES['ASK_PS'],msg=int(self.id))
+                self.sock.send(msg.str())
+                ready = select.select([self.sock],[],[],RpiRunner.TIMEOUT)
+                if ready[0] :
+                    try :
+                        msg = message(bytes=self.sock.recv(TYPES['BYTE_SZ']))
+                        if msg.ty == TYPES['RES_PS']:
+                            self.set_anchor_position(anch,msg.msg)
+                            return True
+                        else :
+                            self.cnsQ.put("Message érroné : (2)\n"+msg.toString())
+                            return False
+                    except socket.error :
+                        self.cnsQ.put("Socket error (3)")
                         return False
-                except socket.error :
-                    self.cnsQ.put("Socket error (3)")
-                    return False
-            else:
-                self.cnsQ.put("Pas de reponse") #Message a changer
-        except socket.error:
-            self.cnsQ.put("Socket error (2)")
-            return False
-        return True
+                else:
+                    self.cnsQ.put("Pas de reponse") #Message a changer
+            except socket.error:
+                self.cnsQ.put("Socket error (2)")
+                return False
+            cmp+=1
+
+        return False
 
 
     def ask_for_distance(self):
@@ -574,20 +598,80 @@ class Mobile(Thread):
         return True
 
 
+helpMsg = "Options : \n" \
+       "    -ip <adresse>\n" \
+       "    -p <port\n" \
+       "    -t <type> (anch/mob)\n" \
+       "    -u <ultra> (True/False)\n" \
+       "    -x <position>\n" \
+       "    -y <position>\n" \
+        "   -l <log> (True/False)\n" \
+          "    -d <distance>"
 
-port = 4003
+
 ip = "localhost"
+port = 4000
+t = TYPES['TY_ANCH']
+anchX = 1
+anchY = 1
+u = True
+l = True
+options = "ip:p:t:u:x:y:l:d"
+d = 42
 
-a1 = RpiRunner(TYPES['TY_ANCH'],ip,port,anchX=float(0),anchY=float(0), dist = 142.42)
-a2 = RpiRunner(TYPES['TY_ANCH'],ip,port, anchX=float(0),anchY=float(100), dist=float(100))
-a3 = RpiRunner(TYPES['TY_ANCH'],ip,port,anchX=float(100),anchY=float(0), dist=float(100))
+try :
+
+    opt = sys.argv
+
+    for i in range(len(opt)):
+
+        if opt[i] in ["-ip"] :
+            ip = opt[i+1]
+
+        elif opt[i] in ["-p"] :
+            port = int(opt[i+1])
+
+        elif opt[i] in ["-t"] :
+            if opt[i+1] in ["anch","ANCH","Anch"]:
+                t = TYPES['TY_ANCH']
+            elif opt[i+1] in ["mob","Mob","MOB"]:
+                t = TYPES['TY_MOB']
+
+        elif opt[i] in ["-x"] :
+            anchX = float(opt[i+1])
+
+        elif opt[i] in ["-y"] :
+            anchY = float(opt[i+1])
+
+        elif opt[i] in ["-u"] :
+            if opt[i+1] in ["False","false","f","FALSE","F"]:
+                u = False
+
+        elif opt[i] in ["-l"] :
+            if opt[i+1] in ["False","false","f","FALSE","F"]:
+                l = False
+
+        elif opt[i] in ["-d"] :
+            d = float(opt[i+1])
+
+    rpi = RpiRunner(t,ip,port,anchX=anchX,anchY=anchY, ultra = u,showLog=l,dist=d)
+    rpi.start()
+    rpi.join()
 
 
-a1.start()
-a2.start()
-a3.start()
-#a4.start()
+except :
+    print("\nLes arguments sont incorrects : \n")
+    print(helpMsg)
 
 
-rpi = RpiRunner(TYPES['TY_MOB'],ip,port, showLog=True)
-rpi.start()
+
+
+
+
+
+
+
+
+
+
+

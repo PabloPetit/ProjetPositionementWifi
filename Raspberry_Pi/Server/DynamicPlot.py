@@ -1,11 +1,4 @@
-import random
-
 import matplotlib.pyplot as plt
-import time
-
-
-
-
 
 class DynamicPlot:
 

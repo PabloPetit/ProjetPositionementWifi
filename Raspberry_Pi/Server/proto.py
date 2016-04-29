@@ -15,10 +15,8 @@ TYPES['RES_TY'] = 4 # Donne son type  : MESS = A | M
 TYPES['CNF_TY'] = 5 # Confirme la reception du type
 TYPES['ASK_AL'] = 6 # Demande la liste des ancres : MESS = id
 TYPES['RES_AL'] = 7 # Donne la liste des ancres : MESS = int + id*
-TYPES['ASK_DT'] = 8 # Demande une evaluation de distance : MESS = id
-TYPES['RES_DT'] = 9 # Renvoi l'evaluation de distance : MESS = int
-TYPES['ASK_PS'] = 10 # Demande sa position à une ancre : MESS = id
-TYPES['RES_PS'] = 11 # Renvoi sa position : MESS = int+int
+TYPES['ASK_ST'] = 8 # Demande d'etat : MESS = id
+TYPES['RES_ST'] = 9 # Renvoi d'état : MESS = x y dt
 TYPES['ASK_ID'] = 12 # Redemande son id
 TYPES['UNK_ID'] = 13 # Id inconnue, message non redirigé : MESS = dest
 TYPES['IM_OUT'] = 14 # Annonce une sortie du réseau TODO

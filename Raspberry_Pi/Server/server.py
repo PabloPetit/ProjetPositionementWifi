@@ -9,8 +9,6 @@ from time import *
 import sys
 
 
-
-
 server_id = TYPES['SERV_ID'] #Le server à toujours pour id 1
 anchor_list = [] #Liste des ancres connectées
 mobile_list = [] #Liste des mobiles connecté
@@ -79,7 +77,6 @@ class console(Thread):
             if terminated :
                 return
             self.queueService()
-            #print("> ",end="")
             i, o, e = select.select( [sys.stdin], [], [], console.TIMEOUT)
             if i and not terminated: # Test
                 st = sys.stdin.readline().strip()
@@ -119,7 +116,7 @@ class console(Thread):
             mob = id[0]
             cmd = input("Voulez-vous : \n"
                   "1/ Afficher le log en console\n"
-                  "2/Afficher le log sur plots"
+                  "2/Afficher le log sur plots\n"
                   "3/ Enregistrer le log\n")
 
             if not cmd.isdigit():
@@ -139,8 +136,11 @@ class console(Thread):
                	    fichier = open(cmd, "w")
                     fichier.write(mob.get_log())
                     fichier.close()
+                    print("Le fichier a bien été sauvegardé")
+                    sleep(2)
                 except:
                     print("Ouverture impossible, abandon")
+                    sleep(2)
                     pass
                 pass
         else:
@@ -286,9 +286,11 @@ class thread_client(Thread):
         console_queue.put("Envoi de l'id au client "+str(self.client.id))
         while(i<self.MAX_ATTEMPS): #On vas tenter plusieurs fois de communiquer avec le client, apres quoi on fermera la sock si pas de reponse
             try:
-                console_queue.put("Envoi d'id, essai numero "+str(i)+" vers le client "+str(self.client.id))
+                if self.printRtr :
+                    console_queue.put("Envoi d'id, essai numero "+str(i)+" vers le client "+str(self.client.id))
                 self.client.sock.send(message(dest=self.client.id, ty=TYPES['SET_ID'], msg=self.client.id).str()) # Envoi au nouveau client son id
-                console_queue.put("En attente de confirmation id - client "+str(self.client.id)+" ...")
+                if self.printRtr :
+                    console_queue.put("En attente de confirmation id - client "+str(self.client.id)+" ...")
                 ready = select.select([self.client.sock],[], [], thread_client.TIMEOUT)
 
                 if ready[0] :
@@ -296,8 +298,9 @@ class thread_client(Thread):
                     if msg.ty == TYPES['CNF_ID']:
                         return True
                     else:
-                        console_queue.put("Message incorrect reçu - client"+str(self.client.id))
-                        console_queue.put(msg.toString())
+                        if self.printRtr :
+                            console_queue.put("Message incorrect reçu - client"+str(self.client.id))
+                            console_queue.put(msg.toString())
 
             except select.error:
                 print("ERROR")
@@ -322,7 +325,8 @@ class thread_client(Thread):
         global TYPES
         global server_id
         i=0
-        console_queue.put("Demande de type envoyé au client "+str(self.client.id))
+        if self.printRtr :
+            console_queue.put("Demande de type envoyé au client "+str(self.client.id))
         while(i<thread_client.MAX_ATTEMPS):
             console_queue.put("Envoi demande de confirmation type numero "+str(i)+" vers le client "+str(self.client.id))
             try:
@@ -330,7 +334,8 @@ class thread_client(Thread):
                 mess = message(dest=self.client.id, ty=TYPES['ASK_TY'], msg=server_id).str()
 
                 self.client.sock.send(mess) # Demande son type au client
-                console_queue.put("En attente de réponse - client "+str(self.client.id)+" ...")
+                if self.printRtr :
+                    console_queue.put("En attente de réponse - client "+str(self.client.id)+" ...")
                 ready = select.select([self.client.sock],[], [], thread_client.TIMEOUT)
                 if ready[0] :
                     data = self.client.sock.recv(TYPES['BYTE_SZ'])
@@ -373,8 +378,6 @@ class thread_client(Thread):
 
         for i in range(0,min(TYPES['MSG_LN'],len(anchor_list))):
             tmp.append(anchor_list[i].id)
-
-        print(tmp)
 
         try:
             self.client.sock.send(message(dest=self.client.id, ty=TYPES['RES_AL'], msg=tmp).str())
@@ -468,7 +471,8 @@ class thread_client(Thread):
                             if self.printRtr :
                                 console_queue.put("Message du client "+str(self.client.id)+" à été retransmit vers le client "+str(msg.dest))
                         else:
-                            console_queue.put("Le message du client "+str(self.client.id)+" n'as pas trouvé de destinataire\n"+msg.toString())
+                            if self.printRtr :
+                                console_queue.put("Le message du client "+str(self.client.id)+" n'as pas trouvé de destinataire\n"+msg.toString())
                             try:
                                 self.client.sock.send(message(dest=self.client.id, ty=TYPES['UNK_ID'],msg=msg.dest).str())
                             except socket.error:
@@ -476,23 +480,29 @@ class thread_client(Thread):
 
 
                     else :
-                        console_queue.put("Le message demande à être traité par le serveur")
+                        if self.printRtr :
+                            console_queue.put("Le message demande à être traité par le serveur")
 
                         if msg.ty == TYPES['ASK_ID'] :
-                            console_queue.put("Demande d'id reçu du client "+str(self.client.id))
+                            if self.printRtr :
+                                console_queue.put("Demande d'id reçu du client "+str(self.client.id))
                             self.new_id()
                         elif msg.ty == TYPES['ASK_AL']:
-                            console_queue.put("Demande de liste des ancres reçu du client "+str(self.client.id))
+                            if self.printRtr :
+                                console_queue.put("Demande de liste des ancres reçu du client "+str(self.client.id))
                             self.send_anchor_list()
                         elif msg.ty == TYPES['RES_LG']:
-                            console_queue.put("Log reçu du client "+str(self.client.id))
+                            if self.printRtr :
+                                console_queue.put("Log reçu du client "+str(self.client.id))
                             self.maj_log(msg)
                         elif msg.ty == TYPES['IM_OUT']:
-                            console_queue.put("Le client "+str(self.client.id)+" annoce sa sortie du réseaux")
+                            if self.printRtr :
+                                console_queue.put("Le client "+str(self.client.id)+" annoce sa sortie du réseaux")
                             self.close_connexion()
                             #console_queue.put(msg.toString())
                         else:
-                            console_queue.put("Demande incomprise du client "+str(self.client.id))
+                            if self.printRtr :
+                                console_queue.put("Demande incomprise du client "+str(self.client.id))
                             console_queue.put(msg.toString())
 
             except :

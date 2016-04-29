@@ -27,6 +27,7 @@ class Ultra:
 		GPIO.output(GPIO_TRIGGER, False)
 
 		start = time.time()
+		stop = time.time()
 		while GPIO.input(GPIO_ECHO)==0:
 		  start = time.time()
 		while GPIO.input(GPIO_ECHO)==1:

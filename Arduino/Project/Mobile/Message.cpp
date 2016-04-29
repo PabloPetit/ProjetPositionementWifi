@@ -58,11 +58,8 @@ Vector<Anchor*> recv_Anchor_List(Server esp){
         return anchor_List;
     }
     uint8_t nb_anchor = tmp[2];
-    DEBUG.print("Nombre d'ancre :");
-    DEBUG.println(nb_anchor);
     uint8_t i = 3;
     while (tmp[i] != 0) {
-        DEBUG.println(tmp[i]);
         anchor_List.push_back(new Anchor(tmp[i]));
         i++;
     }
@@ -102,12 +99,12 @@ float recv_Anchor_Status(Server esp, Anchor *ancre){
     uint8_t a[] = {tmp[10], tmp[11], tmp[12], tmp[13]};
     memcpy(&d, &a, sizeof(d));
 
-    DEBUG.print("X :");
+    /*DEBUG.print("X :");
     DEBUG.print(x);
     DEBUG.print(" Y :");
     DEBUG.print(y);
     DEBUG.print(" DT :");
-    DEBUG.println(d);
+    DEBUG.println(d);*/
     ancre->set_Position(x, y);
     ancre->adjust_Range(d);
     return d;
@@ -164,7 +161,7 @@ bool send_ask_Status(Server esp, Anchor *anchor, uint8_t id){
 }
 
 
-bool send_Log(Server esp, Mobile mobile, int iteration, float d1, float d2, float d3){
+bool send_Log(Server esp, Mobile mobile, int iteration, float d1, float d2, float d3, int memory){
     uint8_t tmp[BYTE_SZ] = {0};
     tmp[0] = SERVER_ID;
     tmp[1] = RES_LG;
@@ -222,6 +219,8 @@ bool send_Log(Server esp, Mobile mobile, int iteration, float d1, float d2, floa
     tmp[35] = x_array[1];
     tmp[36] = x_array[2];
     tmp[37] = x_array[3];
+
+    tmp[38] = memory;
 
     return esp.send(tmp, BYTE_SZ);
 }

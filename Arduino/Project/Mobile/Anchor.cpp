@@ -56,6 +56,11 @@ Mobile::Mobile(uint8_t id){
     this->x = new Avt();
     this->y = new Avt();
 }
+Mobile::Mobile(){
+    this->id = 0;
+    this->x = new Avt();
+    this->y = new Avt();
+}
 
 void Mobile::adjust_X(float d){
     this->x->update(d);

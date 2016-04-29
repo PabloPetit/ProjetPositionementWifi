@@ -34,6 +34,7 @@ class Anchor {
 class Mobile {
     public:
         Mobile(uint8_t id);
+        Mobile();
 
         /****SET*****/
         void adjust_X(float d);

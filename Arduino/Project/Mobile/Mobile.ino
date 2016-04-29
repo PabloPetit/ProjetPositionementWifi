@@ -1,40 +1,26 @@
 #include "ESP8266.h"
-#include "Arduino.h"
 #include "Message.h"
-#include "Avt.h"
 #include "Config.h"
 
 
-uint8_t Self_ID = 0;
-Mobile mobile = Mobile(Self_ID);
+int iteration       = 1;
+bool cnftype        = false;
+int nb = 1;
+unsigned long start;
+
+uint8_t Self_ID;
+Mobile mobile;
 ESP8266 esp;
-int iteration = 1;
-Vector<Anchor> anchor_List;
-bool cnftype = false;
-bool setup_OK = false;
-float distances[3] = {0.0f,0.0f,0.0f};
 
 
-bool init_connection();
-bool config_Node();
-bool init_Node();
-void l_Ancre();
-//void l_Mobile();
-float get_Distance();
-//Vector<Anchor*> get_anchor_list();
-void mobile_lloopp();
 
 
 
 
 void setup(void){
     // Init Serial port & ESP
-    int a = 10/0;
-
     Serial.begin(9600);
     Serial1.begin(115200);
-
-    LOG_PRINTLN(a);
     esp = ESP8266();
     pinMode(trigPin, OUTPUT);
     pinMode(echoPin, INPUT);
@@ -133,18 +119,8 @@ bool init_Node(){
 
     // si on est une ancre la configuration est terminé
     if(NODE_TYPE == ANCRE) return true;
-
-
     mobile = Mobile(Self_ID);
-
-    /*Vector<Anchor*> anchor_List;
-    do{
-        anchor_List = get_anchor_list();
-        if(anchor_List.size()< 3)delay(DELAI);
-    }while(anchor_List.size() < 3);
-
-    mobile.update_Anchor_Liste(anchor_List);*/
-
+    start = millis();
     return true;
 }
 
@@ -169,49 +145,6 @@ void l_Ancre(){
             break;
     }
 }
-
-/*void l_Mobile(){
-    // delai entre les itération de l'algo
-    delay(DELAI);
-
-
-    LOG_PRINT("------------------------");
-    LOG_PRINT(iteration);
-    LOG_PRINTLN("------------------------");
-
-    for(int i = 0; i < mobile.get_chosen_Anchor().size(); i++){
-        delay(150);
-        send_ask_Distance(esp, mobile.get_chosen_Anchor_I(i), Self_ID);
-        distances[i] =  recv_Anchor_Distance(esp, mobile.get_chosen_Anchor_I(i));
-
-        if(distances[i] < 0){
-            LOG_PRINT("Ask distance : ");
-            LOG_PRINTLN(FAILURE);
-        }
-
-
-        LOG_PRINT("Avt range A_");
-        LOG_PRINT(mobile.get_chosen_Anchor_I(i)->getId());
-        LOG_PRINT(" :");
-        LOG_PRINTLN(mobile.get_chosen_Anchor_I(i)->get_Range());
-    }
-
-
-    mobile.trilateration();
-
-
-    LOG_PRINT("X :");
-    LOG_PRINTLN(mobile.getX());
-    LOG_PRINT("Y :");
-    LOG_PRINTLN(mobile.getY());
-
-
-    Envoi du log au serveur
-
-    send_Log(esp, mobile, iteration, distances[0], distances[1], distances[2]);
-    iteration++;
-}*/
-
 // TODO : Test
 float get_Distance(){
 
@@ -224,94 +157,24 @@ float get_Distance(){
     return t/2.0f/29.0f;
 }
 
-/*Vector<Anchor*> get_anchor_list(){
-        Vector<Anchor*> anchor_List, nul;
-        LOG_PRINT("send_ask_Anchor_List : ");
-        if(send_ask_Anchor_List(esp, Self_ID)){
-            LOG_PRINTLN(SUCCESS);
-        }
-        else {
-            LOG_PRINTLN(FAILURE);
-            return anchor_List;
-        }
-
-
-
-        anchor_List = recv_Anchor_List(esp);
-
-        for (size_t i = 0; i < anchor_List.size(); i++) {
-            LOG_PRINT("send_ask_Position id ");
-            LOG_PRINT(anchor_List[i]->getId());
-            LOG_PRINT(" :");
-
-            if(send_ask_Position(esp, anchor_List[i], Self_ID)){
-                LOG_PRINTLN(SUCCESS);
-            }
-            else {
-                LOG_PRINTLN(FAILURE);
-                return nul;
-            }
-            LOG_PRsend_Log(esp, mobile, iteration, distances[0], distances[1], distances[2]);INT("recv_Anchor_Position id ");
-            LOG_PRINT(anchor_List[i]->getId());
-
-            if(recv_Anchor_Position(esp, anchor_List[i]) < 1 ){
-                LOG_PRINTLN(FAILURE);
-                return nul;
-            }
-        }
-        return anchor_List;
-}*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void mobile_lloopp(){
 
+    float distances[3]  = {0.0f, 0.0f, 0.0f};
     delay(DELAI);
-    if(iteration%60 == 0){
+    /*if(iteration%60 == 0){
         LOG_PRINTLN("------------------------");
         LOG_PRINTLN("------------------------");
         LOG_PRINTLN("KILL ANCRE !!!!");
         LOG_PRINTLN("------------------------");
         LOG_PRINTLN("------------------------");
-        delay(30000);
-     }
+        //delay(300);
+    }*/
+
+    if(millis() - start > 1000){
+        Serial.println(nb);
+        nb = 1;
+        start = millis();
+    }
 
     LOG_PRINT("------------------------");
     LOG_PRINT(iteration);
@@ -335,7 +198,7 @@ void mobile_lloopp(){
 
     int active = 0;
     for(int i = 0; i < mobile.get_anchor_size(); i++){
-        delay(250);
+        //delay(1);
         LOG_PRINT("send_ask_Status ");
         LOG_PRINTLN(mobile.get_Anchor(i)->getId());
         if(send_ask_Status(esp, mobile.get_Anchor(i), Self_ID)){
@@ -363,12 +226,13 @@ void mobile_lloopp(){
 
     if(active == 3){
         mobile.trilateration();
-        LOG_PRINT("X :");
-        LOG_PRINTLN(mobile.getX());
-        LOG_PRINT("Y :");
-        LOG_PRINTLN(mobile.getY());
-        send_Log(esp, mobile, iteration, distances[0], distances[1], distances[2]);
+        /*Serial.print("X :");
+        Serial.print(mobile.getX());
+        Serial.print(" Y :");
+        Serial.println(mobile.getY());*/
+        send_Log(esp, mobile, iteration, distances[0], distances[1], distances[2], 0);
         iteration++;
+        nb++;
     }
 
 }

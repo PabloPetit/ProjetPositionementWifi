@@ -134,7 +134,7 @@ bool send_ask_Status(Server esp, Anchor *anchor, uint8_t id);
  * @retval true - success.
  * @retval false - failure.
  */
-bool send_Log(Server esp, Mobile mobile, int iteration, float d1, float d2, float d3);
+bool send_Log(Server esp, Mobile mobile, int iteration, float d1, float d2, float d3, int memory);
 
 
 /**

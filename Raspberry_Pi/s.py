@@ -7,7 +7,7 @@ import numpy as np
 
 
 
-fichier = open("./Logs/Final/ancreTombe.txt", "r")
+fichier = open("./Logs/Tests/test2kmH.txt", "r")
 
 X = []
 Y = []

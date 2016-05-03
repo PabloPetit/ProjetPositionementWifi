@@ -22,7 +22,7 @@
 
 #define MAX_ESSAI       5
 #define MODE_DEBUG      false
-#define DELAI           0 // delai entre les demande d'evaluation de distance
+#define DELAI           5000 // delai entre les demande d'evaluation de distance
 
 
 #define ANCRE           1

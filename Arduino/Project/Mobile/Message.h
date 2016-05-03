@@ -116,14 +116,6 @@ bool send_ask_Anchor_List(Server esp, uint8_t id);
 bool send_ask_Status(Server esp, Anchor *anchor, uint8_t id);
 
 
-
-
-
-
-
-
-
-
 /**
  * Envoi au serveur le log de l'iteration
  *

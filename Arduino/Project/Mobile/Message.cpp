@@ -99,12 +99,12 @@ float recv_Anchor_Status(Server esp, Anchor *ancre){
     uint8_t a[] = {tmp[10], tmp[11], tmp[12], tmp[13]};
     memcpy(&d, &a, sizeof(d));
 
-    /*DEBUG.print("X :");
+    DEBUG.print("X :");
     DEBUG.print(x);
     DEBUG.print(" Y :");
     DEBUG.print(y);
     DEBUG.print(" DT :");
-    DEBUG.println(d);*/
+    DEBUG.println(d);
     ancre->set_Position(x, y);
     ancre->adjust_Range(d);
     return d;

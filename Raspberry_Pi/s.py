@@ -7,7 +7,7 @@ import numpy as np
 
 
 
-fichier = open("./Logs/Final/ancreTombe.txt", "r")
+fichier = open("./Logs/Final/static100-50.txt", "r")
 
 X = []
 Y = []
@@ -41,23 +41,13 @@ t = np.arange(len(IT))
 
 
 print(len(R3))
-#plt.plot(IT, R3, 'b-')
-#plt.plot(IT, avtR3, 'g-')
+plt.plot(IT, R3, 'b-')
+plt.plot(IT, avtR3, 'g-')
 #plt.plot(X, Y, 'r--')
 #plt.plot(R2)
-plt.scatter(X,Y,c=t)
+#plt.scatter(X,Y,c=t)
 
-plt.xlim([0,150])
-plt.ylim([0,150])
+#plt.xlim([0,150])
+#plt.ylim([0,150])
 
 plt.show()
-
-
-
-
-
-
-
-
-
-

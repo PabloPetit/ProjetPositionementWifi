@@ -161,24 +161,13 @@ void mobile_lloopp(){
 
     float distances[3]  = {0.0f, 0.0f, 0.0f};
     delay(DELAI);
-    /*if(iteration%60 == 0){
-        LOG_PRINTLN("------------------------");
-        LOG_PRINTLN("------------------------");
-        LOG_PRINTLN("KILL ANCRE !!!!");
-        LOG_PRINTLN("------------------------");
-        LOG_PRINTLN("------------------------");
-        //delay(300);
-    }*/
-
-    if(millis() - start > 1000){
-        Serial.println(nb);
-        nb = 1;
-        start = millis();
-    }
-
-    LOG_PRINT("------------------------");
-    LOG_PRINT(iteration);
-    LOG_PRINTLN("------------------------");
+    Serial.println("0000000000@@@@@@@@@@@@@@@@@@@@@@@@@@@@###############");
+    Serial.println("0000000000@@@@@@@@@@@@@@@@@@@@@@@@@@@@###############");
+    Serial.println("0000000000@@@@@@@@@@@@@@@@@@@@@@@@@@@@###############");
+    Serial.println("0000000000@@@@@@@@@@@@@@@@@@@@@@@@@@@@###############");
+    Serial.print("------------------------");
+    Serial.print(iteration);
+    Serial.println("------------------------");
     if(mobile.get_anchor_size() < 3){
         LOG_PRINTLN("moins de 3 ancres ");
         Vector<Anchor*> anchor_List;
@@ -198,7 +187,7 @@ void mobile_lloopp(){
 
     int active = 0;
     for(int i = 0; i < mobile.get_anchor_size(); i++){
-        //delay(1);
+        delay(300);
         LOG_PRINT("send_ask_Status ");
         LOG_PRINTLN(mobile.get_Anchor(i)->getId());
         if(send_ask_Status(esp, mobile.get_Anchor(i), Self_ID)){
@@ -211,7 +200,7 @@ void mobile_lloopp(){
         LOG_PRINT("recv_Anchor_status id ");
         LOG_PRINT(mobile.get_Anchor(i)->getId());
         distances[active] = recv_Anchor_Status(esp, mobile.get_Anchor(i));
-        if((distances[active]) > 0 ){
+        if((distances[active]) > 1 ){
             active++;
             LOG_PRINTLN(mobile.get_Anchor(i)->get_Range());
             if(active == 3) break;
@@ -226,10 +215,10 @@ void mobile_lloopp(){
 
     if(active == 3){
         mobile.trilateration();
-        /*Serial.print("X :");
+        Serial.print("X :");
         Serial.print(mobile.getX());
         Serial.print(" Y :");
-        Serial.println(mobile.getY());*/
+        Serial.println(mobile.getY());
         send_Log(esp, mobile, iteration, distances[0], distances[1], distances[2], 0);
         iteration++;
         nb++;

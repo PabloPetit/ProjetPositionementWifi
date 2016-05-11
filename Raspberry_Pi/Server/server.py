@@ -3,7 +3,6 @@ import select
 from queue import Queue
 from threading import *
 from proto import *
-from DynamicPlot import *
 from time import *
 
 import sys
@@ -92,10 +91,13 @@ class console(Thread):
                     print(anchor_list)
                 elif st.lower() in ["state"]:
                     print("Etat global du server")
+                    print("Fonction non implémentée")
                 elif st.lower() in ["reboot_server"]:
                     print("Relance le server")
+                    print("Fonction non implémentée")
                 elif st.lower() in ["send_msg"]:
                     print("Envoi un message à un mobile")
+                    print("Fonction non implémentée")
                 elif st.lower() in ["log"]:
                     self.log()
                 else:
@@ -116,8 +118,7 @@ class console(Thread):
             mob = id[0]
             cmd = input("Voulez-vous : \n"
                   "1/ Afficher le log en console\n"
-                  "2/Afficher le log sur plots\n"
-                  "3/ Enregistrer le log\n")
+                  "2/ Enregistrer le log\n")
 
             if not cmd.isdigit():
                 return
@@ -128,9 +129,6 @@ class console(Thread):
                 print(mob.get_log())
 
             elif cmd == 2 :
-                mob.initPlots()
-
-            elif cmd == 3 :
                 cmd = input("Entrez le nom du fichier : \n> ")
                 try :
                	    fichier = open(cmd, "w")
@@ -226,13 +224,7 @@ class thread_client(Thread):
         self.log = []
         self.printRtr = printRtr
 
-        self.printingPlots = False
 
-        self.plotPosX = None
-        self.plotPosY = None
-        self.plotD1 = None
-        self.plotD2 = None
-        self.plotD3 = None
 
     def close_connexion(self, pb = True):
         global TYPES
@@ -384,24 +376,6 @@ class thread_client(Thread):
         except socket.error:
                     self.close_connexion()
 
-    def updatePlots(self,log):
-        self.plotPosX.update(log[8],log[0]) # BOF BOF
-        self.plotPosY.update(log[8],log[1]) # BOF BOF
-        self.plotD1.update(log[2],log[3])
-        self.plotD2.update(log[4],log[5])
-        self.plotD3.update(log[6],log[7])
-
-
-    def initPlots(self):
-        global TYPES
-        self.plotPosX = DynamicPlot(TYPES['MIN'],TYPES['MAX'])
-        self.plotPosY = DynamicPlot(TYPES['MIN'],TYPES['MAX'])
-        self.plotD1 = DynamicPlot(TYPES['MIN'],TYPES['MAX'])
-        self.plotD2 = DynamicPlot(TYPES['MIN'],TYPES['MAX'])
-        self.plotD3 = DynamicPlot(TYPES['MIN'],TYPES['MAX'])
-        self.printingPlots = True
-        for i in self.log :
-            self.updatePlots(i)
 
 
     def maj_log(self,msg):
@@ -420,8 +394,6 @@ class thread_client(Thread):
             tmp = (x,y,dt1,sg1,dt2,sg2,dt3,sg3,it)
             self.log.append(tmp)
 
-            if self.printingPlots :
-                self.updatePlots(tmp)
 
 
         except :
@@ -516,7 +488,7 @@ class thread_client(Thread):
 helpMsg = "Options : \n" \
        "    -ip <adresse>\n" \
        "    -p <port>\n" \
-       "    -rtr <retransmission> (True/False)\n" \
+       "    -l <retransmission> (True/False)\n" \
           "    -mxQ <max queue>"
 
 
@@ -540,7 +512,7 @@ try :
             port = opt[i+1]
 
 
-        elif opt[i] in ["-rtr"] :
+        elif opt[i] in ["-l"] :
             if opt[i+1] in ["True","TRUE","t","true","T"]:
                 rtr = True
 

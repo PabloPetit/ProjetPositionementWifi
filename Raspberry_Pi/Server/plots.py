@@ -48,30 +48,152 @@ class logs:
             self.IT += [float(ll[8])]
 
 
-def positionBrutPlusAVT(logs):
+def positionBrut(logs):
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
 
-    f, ax = plt.subplots()
-
+    plt.suptitle(titre)
     xAvt = logs.X
     yAvt = logs.Y
-
     xBrut, yBrut = getXYBrut(logs)
+    ''' '''
 
-    ax.plot(xAvt,yAvt,'g.')
-    ax.plot(xBrut,yBrut,'r.')
+    t = np.arange(len(xAvt))
+    ax.scatter(xBrut,yBrut,c=t, label="Brut")
 
+
+    ax.legend(loc='upper left')
+    ax.grid()
+
+
+    plt.show()
     pass
+
+def positionAVT(logs):
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    plt.suptitle(titre)
+    xAvt = logs.X
+    yAvt = logs.Y
+    ''' '''
+
+    t = np.arange(len(xAvt))
+    ax.scatter(xAvt,yAvt,c=t, label="Avt")
+
+
+    ax.legend(loc='upper left')
+    ax.grid()
+
+
+    plt.show()
+    pass
+
+
+def moy(tab):
+
+    s = 0
+    for e in tab:
+        s += e
+    return s/len(tab)
 
 def getXYBrut(logs):
     xBrut = []
     yBrut = []
 
-    for i in range(len(logs.R1)):
-        xTmp,yTmp = trilaterate(logs.xA,logs.yA,logs.R1[i],logs.xB,logs.yB,logs.R2[i],logs.xC,logs.yC,logs.R3[i])
+    for i in range(60):
+        xTmp,yTmp = trilaterate(logs.xC,logs.yC,logs.R1[i],logs.xB,logs.yB,logs.R2[i],logs.xA,logs.yA,logs.R3[i])
+        xBrut.append(xTmp)
+        yBrut.append(yTmp)
+    for i in range(60, len(logs.R1)):
+        #print( str(i) + " " + str(logs.R1[i]) + " " + str(logs.R2[i]) + " " +str(logs.R3[i]) + " " + str(x) + " " +str(y) )
+
+        xTmp,yTmp = trilaterate(logs.xC,logs.yC,logs.R1[i],logs.xB,logs.yB,logs.R2[i],logs.xD,logs.yD,logs.R3[i])
+        #print( str(i) + " " + str(logs.R1[i]) + " " + str(logs.R2[i]) + " " +str(logs.R3[i]) + " " + str(xTmp) + " " +str(yTmp) )
         xBrut.append(xTmp)
         yBrut.append(yTmp)
 
     return xBrut, yBrut
+
+def getXYMoyenne(logs, cut=0):
+    R11 = logs.R1[:cut]
+    R12 = logs.R1[cut:]
+    MR1 = [moy(R11[max(0, i-9): i]) for i in range(1, len(R11))]
+    MR12 = [moy(R12[max(0, i-9): i]) for i in range(1, len(R12))]
+
+
+    R21 = logs.R2[:cut]
+    R22 = logs.R2[cut:]
+    MR2 = [moy(R21[max(0, i-9): i]) for i in range(1, len(R21))]
+    MR22 = [moy(R22[max(0, i-9): i]) for i in range(1, len(R22))]
+
+
+    R31 = logs.R3[:cut]
+    R32 = logs.R3[cut:]
+    MR3 = [moy(R31[max(0, i-9): i]) for i in range(1, len(R31))]
+    MR32 = [moy(R32[max(0, i-9): i]) for i in range(1, len(R32))]
+
+    XX = []
+    YY = []
+
+    for i in range(len(MR1)):
+
+        x, y = trilaterate(logs.xC, logs.yC, MR1[i], logs.xB, logs.yB, MR2[i],
+            logs.xA,logs.yA, MR3[i])
+
+        XX += [x]
+        YY += [y]
+
+    for i in range(len(MR12)):
+        x, y = trilaterate(logs.xC, logs.yC, MR12[i], logs.xB, logs.yB, MR22[i],
+            logs.xA,logs.yA, MR32[i])
+        print( str(i) + " " + str(MR12[i]) + " " + str(MR22[i]) + " " +str(MR32[i]) + " " + str(x) + " " +str(y) )
+        XX += [x]
+        YY += [y]
+
+    return XX, YY
+
+
+def positionMoyenne(logs, cut):
+    fig = plt.figure()
+    plt.suptitle(titre)
+    ax = fig.add_subplot(111)
+
+
+    xAvt = logs.X
+    yAvt = logs.Y
+    xMoy, yMoy = getXYMoyenne(logs, cut)
+
+    t = np.arange(len(xMoy))
+    ax.scatter(xMoy, yMoy, c=t, label="Moyenne")
+    ax.legend(loc='upper left')
+    ax.grid()
+
+
+    plt.show()
+    pass
+
+
+def distanceAVT(log):
+    BrutR2 = logs.R2
+    AvtR2 = logs.avtR2
+    MoyenneR2 = [moy(BrutR2[max(0, i-9): i+1]) for i in range(0, len(BrutR2))]
+
+    fig = plt.figure()
+    plt.suptitle(titre)
+    ax = fig.add_subplot(111)
+
+    ax.plot(logs.IT, MoyenneR2, 'r-')
+    ax.plot(logs.IT, MoyenneR2, 'r+', label="Moyenne")
+    ax.plot(logs.IT, BrutR2, 'b-')
+    ax.plot(logs.IT, BrutR2, 'b+', label="Brut")
+    ax.plot(logs.IT, AvtR2, 'g-')
+    ax.plot(logs.IT, AvtR2, 'g+', label="Avt")
+    ax.legend(loc='upper right')
+    ax.grid()
+    plt.show()
+
+    pass
 
 
 def trilaterate(xA,yA,dA,xB,yB,dB,xC,yC,dC):
@@ -105,12 +227,14 @@ def trilaterate(xA,yA,dA,xB,yB,dB,xC,yC,dC):
 
 helpMess = "Not implemented yet"
 
-
+titre = sys.argv[2]
 logs = logs()
 logs.readLogs(sys.argv[1])
-positionBrutPlusAVT(logs)
+#positionBrut(logs)
+positionMoyenne(logs, 0)
+#positionAVT(logs)
+#distanceAVT(logs)
 
-plt.show()
 
 
 
@@ -123,4 +247,3 @@ try :
 except :
     print(helpMess)
 """
-

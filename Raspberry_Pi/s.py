@@ -7,11 +7,7 @@ import numpy as np
 
 
 
-<<<<<<< HEAD
 fichier = open("./Logs/Final/static100-50.txt", "r")
-=======
-fichier = open("./Logs/Tests/test2kmH.txt", "r")
->>>>>>> d23e4bf000e8b74da44da97abecf59c45bfa6dc5
 
 X = []
 Y = []

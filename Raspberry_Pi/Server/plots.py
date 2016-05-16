@@ -52,7 +52,7 @@ def positionBrut(logs):
     fig = plt.figure()
     ax = fig.add_subplot(111)
 
-    plt.suptitle(titre)
+    #plt.suptitle(titre)
     xAvt = logs.X
     yAvt = logs.Y
     xBrut, yBrut = getXYBrut(logs)
@@ -60,9 +60,11 @@ def positionBrut(logs):
 
     t = np.arange(len(xAvt))
     ax.scatter(xBrut,yBrut,c=t, label="Brut")
+    plt.ylabel('cm')
+    plt.xlabel('cm')
 
 
-    ax.legend(loc='upper left')
+    #ax.legend(loc='upper left')
     ax.grid()
 
 
@@ -73,16 +75,18 @@ def positionAVT(logs):
     fig = plt.figure()
     ax = fig.add_subplot(111)
 
-    plt.suptitle(titre)
+    #plt.suptitle(titre)
     xAvt = logs.X
     yAvt = logs.Y
     ''' '''
 
     t = np.arange(len(xAvt))
     ax.scatter(xAvt,yAvt,c=t, label="Avt")
+    plt.ylabel('cm')
+    plt.xlabel('cm')
 
 
-    ax.legend(loc='upper left')
+    #ax.legend(loc='upper left')
     ax.grid()
 
 
@@ -101,18 +105,18 @@ def getXYBrut(logs):
     xBrut = []
     yBrut = []
 
-    for i in range(60):
+    for i in range(len(logs.R1)):
         xTmp,yTmp = trilaterate(logs.xC,logs.yC,logs.R1[i],logs.xB,logs.yB,logs.R2[i],logs.xA,logs.yA,logs.R3[i])
         xBrut.append(xTmp)
         yBrut.append(yTmp)
-    for i in range(60, len(logs.R1)):
+    '''for i in range(60, len(logs.R1)):
         #print( str(i) + " " + str(logs.R1[i]) + " " + str(logs.R2[i]) + " " +str(logs.R3[i]) + " " + str(x) + " " +str(y) )
 
-        xTmp,yTmp = trilaterate(logs.xC,logs.yC,logs.R1[i],logs.xB,logs.yB,logs.R2[i],logs.xD,logs.yD,logs.R3[i])
+        xTmp,yTmp = trilaterate(logs.xA,logs.yA,logs.R1[i],logs.xB,logs.yB,logs.R2[i],logs.xC,logs.yC,logs.R3[i])
         #print( str(i) + " " + str(logs.R1[i]) + " " + str(logs.R2[i]) + " " +str(logs.R3[i]) + " " + str(xTmp) + " " +str(yTmp) )
         xBrut.append(xTmp)
         yBrut.append(yTmp)
-
+    '''
     return xBrut, yBrut
 
 def getXYMoyenne(logs, cut=0):
@@ -147,26 +151,29 @@ def getXYMoyenne(logs, cut=0):
     for i in range(len(MR12)):
         x, y = trilaterate(logs.xC, logs.yC, MR12[i], logs.xB, logs.yB, MR22[i],
             logs.xA,logs.yA, MR32[i])
-        print( str(i) + " " + str(MR12[i]) + " " + str(MR22[i]) + " " +str(MR32[i]) + " " + str(x) + " " +str(y) )
+        #print( str(i) + " " + str(MR12[i]) + " " + str(MR22[i]) + " " +str(MR32[i]) + " " + str(x) + " " +str(y) )
         XX += [x]
         YY += [y]
 
     return XX, YY
 
 
-def positionMoyenne(logs, cut):
+def positionMoyenne(logs, cut=0):
     fig = plt.figure()
-    plt.suptitle(titre)
+    #plt.suptitle(titre)
     ax = fig.add_subplot(111)
 
-
+    if cut is 0:
+        cut = len(logs.X)
     xAvt = logs.X
     yAvt = logs.Y
     xMoy, yMoy = getXYMoyenne(logs, cut)
 
     t = np.arange(len(xMoy))
     ax.scatter(xMoy, yMoy, c=t, label="Moyenne")
-    ax.legend(loc='upper left')
+    plt.ylabel('cm')
+    plt.xlabel('cm')
+    #ax.legend(loc='upper left')
     ax.grid()
 
 
@@ -180,16 +187,16 @@ def distanceAVT(log):
     MoyenneR2 = [moy(BrutR2[max(0, i-9): i+1]) for i in range(0, len(BrutR2))]
 
     fig = plt.figure()
-    plt.suptitle(titre)
-    ax = fig.add_subplot(111)
 
+    ax = fig.add_subplot(111)
+    #ax.suptitle(titre)
     ax.plot(logs.IT, MoyenneR2, 'r-')
     ax.plot(logs.IT, MoyenneR2, 'r+', label="Moyenne")
     ax.plot(logs.IT, BrutR2, 'b-')
     ax.plot(logs.IT, BrutR2, 'b+', label="Brut")
     ax.plot(logs.IT, AvtR2, 'g-')
     ax.plot(logs.IT, AvtR2, 'g+', label="Avt")
-    ax.legend(loc='upper right')
+    #ax.legend(loc='upper right')
     ax.grid()
     plt.show()
 
@@ -230,9 +237,9 @@ helpMess = "Not implemented yet"
 titre = sys.argv[2]
 logs = logs()
 logs.readLogs(sys.argv[1])
-#positionBrut(logs)
-positionMoyenne(logs, 0)
-#positionAVT(logs)
+positionBrut(logs)
+positionMoyenne(logs)
+positionAVT(logs)
 #distanceAVT(logs)
 
 

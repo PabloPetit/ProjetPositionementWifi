@@ -20,12 +20,12 @@ class logs:
         self.avtR1 = []
         self.avtR2 = []
         self.avtR3 = []
-        self.xA = 0
+        self.xA = 100
         self.yA = 0
-        self.xB = 100
-        self.yB = 0
+        self.xB = 0
+        self.yB = 100
         self.xC = 0
-        self.yC = 100
+        self.yC = 0
 
 
         self.xD = 0
@@ -102,13 +102,115 @@ def trilaterate(xA,yA,dA,xB,yB,dB,xC,yC,dC):
 
     return resX, resY
 
+def moy(tab):
+
+    s = 0
+    for e in tab:
+        s += e
+    return s/len(tab)
+
+def getXYMoyenne(logs, cut=0):
+    R11 = logs.R1[:cut]
+    R12 = logs.R1[cut:]
+    MR1 = [moy(R11[max(0, i-9): i]) for i in range(1, len(R11))]
+    MR12 = [moy(R12[max(0, i-9): i]) for i in range(1, len(R12))]
+
+
+    R21 = logs.R2[:cut]
+    R22 = logs.R2[cut:]
+    MR2 = [moy(R21[max(0, i-9): i]) for i in range(1, len(R21))]
+    MR22 = [moy(R22[max(0, i-9): i]) for i in range(1, len(R22))]
+
+
+    R31 = logs.R3[:cut]
+    R32 = logs.R3[cut:]
+    MR3 = [moy(R31[max(0, i-9): i]) for i in range(1, len(R31))]
+    MR32 = [moy(R32[max(0, i-9): i]) for i in range(1, len(R32))]
+
+    XX = []
+    YY = []
+
+    for i in range(len(MR1)):
+
+        x, y = trilaterate(logs.xC, logs.yC, MR1[i], logs.xB, logs.yB, MR2[i],
+            logs.xA,logs.yA, MR3[i])
+
+        XX += [x]
+        YY += [y]
+
+    for i in range(len(MR12)):
+        x, y = trilaterate(logs.xC, logs.yC, MR12[i], logs.xB, logs.yB, MR22[i],
+            logs.xA,logs.yA, MR32[i])
+        #print( str(i) + " " + str(MR12[i]) + " " + str(MR22[i]) + " " +str(MR32[i]) + " " + str(x) + " " +str(y) )
+        XX += [x]
+        YY += [y]
+
+    return XX, YY
+
 
 helpMess = "Not implemented yet"
 
 
 logs = logs()
 logs.readLogs(sys.argv[1])
-positionBrutPlusAVT(logs)
+#positionBrutPlusAVT(logs)
+
+
+start = 35.54#23.17
+pas = 2.77
+distance = 118.24
+nb_pas = int(distance/pas)
+first_it = 10
+
+x = [ (start+i*pas)/sqrt(2) for i in range(100)]
+
+xM,yM = getXYMoyenne(logs)
+
+max_val = 0
+max_valM = 0
+moy = []
+moyM = []
+
+print(len(logs.X))
+print(len(x))
+
+
+for i in range(0,len(xM)-first_it*2):
+    j = i+first_it
+
+    n = sqrt( (logs.X[j]-x[i])*(logs.X[j]-x[i]) + (logs.Y[j]-x[i])*(logs.Y[j]-x[i]) )
+    n2 = sqrt( (xM[j]-x[i])*(xM[j]-x[i]) + (yM[j]-x[i])*(yM[j]-x[i]) )
+
+    if n>max_val:
+        max_val = n
+    moy.append(n)
+
+    if n2>max_valM:
+        max_valM = n2
+    moyM.append(n2)
+    print(str(i)+" AVT : "+str(moy[i])+" MOY : "+str(moyM[i]))
+
+
+res = sum(moy)/len(moy)
+res2 = sum(moyM)/len(moyM)
+print(res)
+print(max_val)
+print("---Moyenne---")
+print(res2)
+print(max_valM)
+
+
+f, ax = plt.subplots()
+
+xAvt = logs.X
+yAvt = logs.Y
+
+xBrut, yBrut = xM,yM
+
+ax.plot(xAvt,yAvt,'g.')
+ax.plot(xBrut,yBrut,'r.')
+ax.plot(x,x,'b.')
+
 
 plt.show()
 
